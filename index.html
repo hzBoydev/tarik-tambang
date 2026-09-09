@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarik Tambang Digital – Multiplayer Online Pancasila</title>
+  <meta name="description" content="Game Tarik Tambang Kuis Pancasila online multiplayer. Host buat room, 2 tim bertanding dari device masing-masing secara real-time." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- CONFETTI CANVAS -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   MODAL: HOST PASSWORD                    -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="modal-host-password" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">🔐</span>
+        <h2 class="modal-title">Akses Khusus Host</h2>
+        <p class="modal-desc">Masukkan password master untuk melanjutkan</p>
+      </div>
+      <div class="modal-body">
+        <div class="input-field-wrap">
+          <input type="password" id="input-host-pass" placeholder="Masukkan Password Host..." autocomplete="off" />
+          <button type="button" class="btn-toggle-eye" onclick="togglePassVisibility()">👁️</button>
+        </div>
+        <p class="modal-error" id="host-pass-error"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeHostPassModal()">Batal</button>
+        <button class="btn-primary btn-modal-submit" onclick="submitHostPassword()">Masuk ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: HOME                            -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-home" class="screen active">
+    <div class="home-container">
+      <div class="home-hero">
+        <div class="home-garuda">🦅</div>
+        <h1 class="home-title">Tarik Tambang Digital</h1>
+        <p class="home-subtitle">Kuis Interaktif Pancasila · Multiplayer Online</p>
+        <div class="home-rope-deco">
+          <span class="deco-team deco-a">🔴</span>
+          <div class="deco-rope-line"></div>
+          <span class="deco-knot">🟡</span>
+          <div class="deco-rope-line"></div>
+          <span class="deco-team deco-b">🔵</span>
+        </div>
+      </div>
+
+      <div class="home-actions">
+        <button class="btn-home-action btn-host-action" id="btn-go-create" onclick="promptHostPassword('create-room')">
+          <span class="home-btn-icon">🏠</span>
+          <div class="home-btn-text">
+            <span class="home-btn-title">Buat Room</span>
+            <span class="home-btn-sub">Host · Atur & pantau pertandingan (Khusus Host)</span>
+          </div>
+          <span class="home-btn-arrow">›</span>
+        </button>
+
+        <button class="btn-home-action btn-join-action" id="btn-go-join" onclick="goToJoinRoom()">
+          <span class="home-btn-icon">🎮</span>
+          <div class="home-btn-text">
+            <span class="home-btn-title">Masuk Room</span>
+            <span class="home-btn-sub">Pemain · Masukkan kode dari host</span>
+          </div>
+          <span class="home-btn-arrow">›</span>
+        </button>
+
+        <button class="btn-home-action btn-admin-action" id="btn-go-admin" onclick="promptHostPassword('admin')">
+          <span class="home-btn-icon">⚙️</span>
+          <div class="home-btn-text">
+            <span class="home-btn-title">Panel Admin</span>
+            <span class="home-btn-sub">Kelola Bank Soal, Nama Tim & Riwayat Pertandingan</span>
+          </div>
+          <span class="home-btn-arrow">›</span>
+        </button>
+      </div>
+
+      <p class="home-footer">🇮🇩 Belajar Pancasila dengan cara yang seru!</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: CREATE ROOM (Host Setup)        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-create-room" class="screen">
+    <div class="create-room-container">
+      <button class="btn-back" onclick="showScreen('home')">← Kembali</button>
+      <div class="cr-header">
+        <div class="cr-icon">⚙️</div>
+        <h1 class="cr-title">Pengaturan Room</h1>
+        <p class="cr-subtitle">Atur permainan sebelum membuat room</p>
+      </div>
+
+      <div class="settings-card">
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="cr-win-target">🏆 Skor Kemenangan</label>
+            <p class="setting-hint">Berapa poin untuk menarik tali ke ujung</p>
+          </div>
+          <div class="setting-input-wrap">
+            <input type="number" id="cr-win-target" min="3" max="10" value="5" />
+            <span class="setting-unit">poin</span>
+          </div>
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="cr-timer">⏱️ Waktu per Soal</label>
+            <p class="setting-hint">Waktu yang diberikan untuk setiap soal</p>
+          </div>
+          <div class="setting-input-wrap">
+            <input type="number" id="cr-timer" min="5" max="30" value="15" />
+            <span class="setting-unit">detik</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary btn-create-room-action" id="btn-create-room" onclick="createRoom()">
+        🚀 Buat Room
+      </button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: HOST LOBBY                      -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-host-lobby" class="screen">
+    <div class="host-lobby-container">
+      <h1 class="lobby-title">🏠 Room Siap!</h1>
+
+      <div class="room-code-card">
+        <span class="room-code-label">Kode Room</span>
+        <div class="room-code-big" id="host-room-code">------</div>
+        <p class="room-code-hint">Bagikan kode ini atau gunakan link di bawah</p>
+      </div>
+
+      <div class="share-section">
+        <div class="share-card share-a">
+          <div class="share-team-header">🔴 Tim A</div>
+          <div class="share-link-row">
+            <input type="text" readonly id="link-team-a" class="share-link-input" />
+            <button class="btn-copy" id="copy-a" onclick="copyLink('A')">📋 Copy</button>
+          </div>
+        </div>
+        <div class="share-card share-b">
+          <div class="share-team-header">🔵 Tim B</div>
+          <div class="share-link-row">
+            <input type="text" readonly id="link-team-b" class="share-link-input" />
+            <button class="btn-copy" id="copy-b" onclick="copyLink('B')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-status-card">
+        <h3 class="ps-heading">Status Pemain</h3>
+        <div class="player-status-list">
+          <div class="ps-item" id="host-status-a">
+            <span class="ps-icon">⏳</span>
+            <span class="ps-name">Tim A</span>
+            <span class="ps-status">Menunggu...</span>
+          </div>
+          <div class="ps-item" id="host-status-b">
+            <span class="ps-icon">⏳</span>
+            <span class="ps-name">Tim B</span>
+            <span class="ps-status">Menunggu...</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary btn-host-start-game" id="btn-host-start" onclick="hostStartGame()" disabled>
+        ▶ Mulai Game
+      </button>
+      <p class="start-hint" id="start-hint-text">Menunggu kedua tim bergabung...</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: JOIN ROOM (Player Entry)        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-join-room" class="screen">
+    <div class="join-container">
+      <button class="btn-back" onclick="showScreen('home')">← Kembali</button>
+      <div class="join-header">
+        <div class="join-icon">🎮</div>
+        <h1 class="join-title">Masuk Room</h1>
+        <p class="join-subtitle">Masukkan kode room dari host</p>
+      </div>
+
+      <div class="join-card">
+        <div class="join-input-group">
+          <label for="join-code">Kode Room</label>
+          <input
+            type="text" id="join-code" maxlength="6"
+            placeholder="Contoh: ABC123"
+            autocomplete="off"
+            oninput="this.value=this.value.toUpperCase()"
+          />
+        </div>
+
+        <div class="join-team-group">
+          <label>Pilih Tim</label>
+          <div class="team-picker">
+            <button class="team-pick-btn active" id="pick-team-a" onclick="pickTeam('A')">
+              <span class="team-pick-emoji">🔴</span>
+              <span>Tim A</span>
+            </button>
+            <button class="team-pick-btn" id="pick-team-b" onclick="pickTeam('B')">
+              <span class="team-pick-emoji">🔵</span>
+              <span>Tim B</span>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-primary btn-join-action" id="btn-join-room" onclick="joinRoom()">
+          🚀 Masuk
+        </button>
+        <p class="join-error" id="join-error"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: PLAYER LOBBY (Waiting)          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-player-lobby" class="screen">
+    <div class="player-lobby-container">
+      <div class="pl-team-badge" id="pl-team-badge">TIM A 🔴</div>
+      <h2 class="pl-title">Berhasil Bergabung!</h2>
+      <div class="pl-room-info">Room: <strong id="pl-room-code">------</strong></div>
+
+      <div class="pl-waiting-anim">
+        <div class="waiting-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+        <p class="pl-waiting-text">Menunggu host memulai game...</p>
+      </div>
+
+      <div class="pl-players">
+        <div class="pl-player-card" id="pl-status-a">
+          <span class="pl-player-icon">⏳</span>
+          <span class="pl-player-name">Tim A</span>
+        </div>
+        <div class="pl-vs">VS</div>
+        <div class="pl-player-card" id="pl-status-b">
+          <span class="pl-player-icon">⏳</span>
+          <span class="pl-player-name">Tim B</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: SPECTATOR (Host – Game View)    -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-spectator" class="screen">
+    <div class="spectator-room-badge" id="spec-room-badge">Room: ------</div>
+
+    <!-- HOST SPECTATOR NOTICE -->
+    <div class="host-view-notice">
+      <span class="hvn-icon">👁️</span>
+      <span class="hvn-text"><strong>Layar Tampilan Host:</strong> Anda memantau jalannya pertandingan. Tombol di bawah tidak bisa diklik di sini karena pemain menjawab langsung dari HP / laptop mereka!</span>
+    </div>
+
+    <header class="game-header">
+      <div class="team-score score-a">
+        <span class="team-name" id="spec-team-name-a">TIM A 🔴</span>
+        <span class="score-count" id="spec-score-a">0</span>
+      </div>
+      <div class="header-center">
+        <span class="question-counter" id="spec-counter">Soal 1 / 20</span>
+        <div class="timer-ring">
+          <svg viewBox="0 0 60 60" id="spec-timer-svg">
+            <circle cx="30" cy="30" r="26" class="timer-bg" />
+            <circle cx="30" cy="30" r="26" class="timer-arc" id="spec-timer-arc" />
+          </svg>
+          <span class="timer-text" id="spec-timer-text">15</span>
+        </div>
+      </div>
+      <div class="team-score score-b">
+        <span class="score-count" id="spec-score-b">0</span>
+        <span class="team-name" id="spec-team-name-b">TIM B 🔵</span>
+      </div>
+    </header>
+
+    <div class="rope-section">
+      <div class="rope-arena">
+        <div class="rope-flag flag-a">🚩</div>
+        <div class="rope-track">
+          <div class="win-line win-line-a" id="spec-win-line-a"></div>
+          <div class="win-line win-line-b" id="spec-win-line-b"></div>
+          <div class="rope-body">
+            <div class="rope-segment seg-a"></div>
+            <div class="rope-segment seg-b"></div>
+          </div>
+          <div class="rope-knot" id="spec-rope-knot">
+            <div class="knot-inner">🟡</div>
+          </div>
+        </div>
+        <div class="rope-flag flag-b">🚩</div>
+      </div>
+      <div class="rope-labels">
+        <span class="rope-label-a" id="spec-rope-label-a">← Tim A</span>
+        <span class="rope-label-center">TENGAH</span>
+        <span class="rope-label-b" id="spec-rope-label-b">Tim B →</span>
+      </div>
+    </div>
+
+    <div class="feedback-overlay" id="spec-feedback-overlay">
+      <div class="feedback-content" id="spec-feedback-content"></div>
+    </div>
+
+    <main class="question-section">
+      <div class="question-card" id="spec-question-card">
+        <p class="question-number" id="spec-q-number">Soal 1</p>
+        <h2 class="question-text" id="spec-q-text">Menunggu soal dimuat...</h2>
+        <div class="choices-grid spec-choices-grid" id="spec-choices-grid"></div>
+      </div>
+    </main>
+
+    <div class="status-bar" id="spec-status-bar">⏳ Menunggu jawaban dari tim...</div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: PLAYER GAME                     -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-player-game" class="screen">
+    <div class="player-game-wrap">
+      <div class="pg-header">
+        <div class="pg-team-badge" id="pg-team-badge">TIM A 🔴</div>
+        <div class="pg-meta">
+          <span class="pg-counter" id="pg-counter">Soal 1/20</span>
+          <div class="pg-timer-ring">
+            <svg viewBox="0 0 60 60" id="pg-timer-svg">
+              <circle cx="30" cy="30" r="26" class="timer-bg" />
+              <circle cx="30" cy="30" r="26" class="timer-arc" id="pg-timer-arc" />
+            </svg>
+            <span class="timer-text" id="pg-timer-text">15</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pg-question-box">
+        <h2 class="pg-question-text" id="pg-q-text">Memuat soal...</h2>
+      </div>
+
+      <div class="pg-choices" id="pg-choices-grid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="pg-status" id="pg-status-bar">⏳ Siap menjawab...</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: RESULT                          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-result" class="screen">
+    <div class="result-container">
+      <div class="result-trophy" id="result-trophy">🏆</div>
+      <h2 class="result-title" id="result-title">TIM A MENANG!</h2>
+      <p class="result-subtitle" id="result-subtitle">Selamat! Tim A berhasil menarik tali ke ujung!</p>
+      <div class="final-scores">
+        <div class="final-score-card final-a">
+          <span class="fs-name" id="final-name-a">TIM A 🔴</span>
+          <span class="fs-score" id="final-score-a">0</span>
+          <span class="fs-label">Skor Akhir</span>
+        </div>
+        <div class="final-score-card final-b">
+          <span class="fs-name" id="final-name-b">TIM B 🔵</span>
+          <span class="fs-score" id="final-score-b">0</span>
+          <span class="fs-label">Skor Akhir</span>
+        </div>
+      </div>
+      <div class="result-buttons">
+        <button class="btn-primary" id="btn-play-again" onclick="playAgain()">🔄 Main Lagi</button>
+        <button class="btn-secondary" id="btn-result-home" onclick="goHome()">🏠 Halaman Utama</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   SCREEN: ADMIN PANEL                     -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="screen-admin" class="screen">
+    <div class="admin-container">
+      <div class="admin-topbar">
+        <button class="btn-back" onclick="showScreen('home')">← Beranda</button>
+        <div class="admin-badge">👑 Mode Admin Host</div>
+      </div>
+
+      <div class="admin-header">
+        <div class="admin-title-wrap">
+          <span class="admin-icon">⚙️</span>
+          <div>
+            <h1 class="admin-title">Panel Kontrol Host</h1>
+            <p class="admin-subtitle">Kelola Bank Soal, Nama Tim & Riwayat Pertandingan</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN TABS -->
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" id="tab-btn-questions" onclick="switchAdminTab('questions')">
+          📚 Bank Soal (<span id="admin-q-count">20</span>)
+        </button>
+        <button class="admin-tab-btn" id="tab-btn-teams" onclick="switchAdminTab('teams')">
+          🏷️ Nama Tim
+        </button>
+        <button class="admin-tab-btn" id="tab-btn-history" onclick="switchAdminTab('history')">
+          📜 Riwayat (<span id="admin-hist-count">0</span>)
+        </button>
+      </div>
+
+      <!-- TAB CONTENT: QUESTIONS -->
+      <div id="tab-content-questions" class="admin-tab-panel active">
+        <div class="admin-panel-toolbar">
+          <div class="admin-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="admin-q-search" placeholder="Cari soal pertanyaan..." oninput="filterAdminQuestions()" />
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn-admin-action-btn btn-reset-q" onclick="resetQuestionsToDefault()">
+              🔄 Reset Default (20 Soal)
+            </button>
+            <button class="btn-admin-action-btn btn-add-q" onclick="openAddQuestionModal()">
+              ➕ Tambah Soal
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-questions-list" id="admin-questions-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: TEAMS -->
+      <div id="tab-content-teams" class="admin-tab-panel">
+        <div class="admin-card teams-config-card">
+          <h2 class="admin-card-title">🏷️ Kustomisasi Nama Tim</h2>
+          <p class="admin-card-sub">Nama tim ini akan diterapkan saat membuat room baru.</p>
+          
+          <div class="teams-input-grid">
+            <div class="team-config-box team-a-box">
+              <div class="team-config-header">
+                <span class="team-dot dot-a">🔴</span>
+                <h3>Tim A (Sisi Kiri)</h3>
+              </div>
+              <label for="admin-team-a-name">Nama Tim A:</label>
+              <input type="text" id="admin-team-a-name" placeholder="Contoh: Garuda Merah" />
+            </div>
+
+            <div class="team-config-box team-b-box">
+              <div class="team-config-header">
+                <span class="team-dot dot-b">🔵</span>
+                <h3>Tim B (Sisi Kanan)</h3>
+              </div>
+              <label for="admin-team-b-name">Nama Tim B:</label>
+              <input type="text" id="admin-team-b-name" placeholder="Contoh: Banteng Biru" />
+            </div>
+          </div>
+
+          <div class="setting-divider" style="margin: 20px 0; height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+          <h2 class="admin-card-title">🔐 Ganti Password Host</h2>
+          <p class="admin-card-sub">Password untuk akses menu "Buat Room" dan "Panel Admin".</p>
+          <div style="max-width: 320px;">
+            <label for="admin-host-pass-new" style="display:block; font-size: 0.85rem; font-weight:700; color:var(--color-muted); margin-bottom: 6px;">Password Host Baru:</label>
+            <input type="text" id="admin-host-pass-new" placeholder="Masukkan password baru..." style="width:100%; padding:12px; background:var(--color-surface); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:1rem; outline:none;" />
+          </div>
+
+          <div class="team-config-actions" style="margin-top: 10px;">
+            <button class="btn-primary btn-save-team" onclick="saveAdminSettings()">💾 Simpan Semua Pengaturan</button>
+            <span class="save-status-msg" id="team-save-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: HISTORY -->
+      <div id="tab-content-history" class="admin-tab-panel">
+        <div class="admin-history-toolbar">
+          <h2 class="admin-card-title">📜 Catatan Riwayat Pertandingan</h2>
+          <button class="btn-danger-outline" onclick="clearMatchHistory()">🗑️ Hapus Semua Riwayat</button>
+        </div>
+        <div class="admin-history-list" id="admin-history-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   MODAL: TAMBAH / EDIT SOAL                -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="modal-question" class="modal-overlay">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <span class="modal-icon" id="qmodal-icon">✏️</span>
+        <h2 class="modal-title" id="qmodal-title">Tambah Soal Baru</h2>
+        <p class="modal-desc">Isi pertanyaan, 4 opsi jawaban, dan tandai lingkaran radio untuk kunci jawaban BENAR</p>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="qmodal-edit-index" value="-1" />
+        
+        <div class="form-group">
+          <label for="qmodal-question">Teks Soal / Pertanyaan</label>
+          <textarea id="qmodal-question" rows="3" placeholder="Tuliskan pertanyaan di sini..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Pilihan Jawaban (Klik radio pada jawaban yang BENAR):</label>
+          <div class="choices-inputs">
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-0" value="0" checked />
+              <span class="choice-tag tag-opt-a">A</span>
+              <input type="text" id="qmodal-choice-0" placeholder="Pilihan A..." />
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-1" value="1" />
+              <span class="choice-tag tag-opt-b">B</span>
+              <input type="text" id="qmodal-choice-1" placeholder="Pilihan B..." />
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-2" value="2" />
+              <span class="choice-tag tag-opt-c">C</span>
+              <input type="text" id="qmodal-choice-2" placeholder="Pilihan C..." />
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-3" value="3" />
+              <span class="choice-tag tag-opt-d">D</span>
+              <input type="text" id="qmodal-choice-3" placeholder="Pilihan D..." />
+            </div>
+          </div>
+        </div>
+
+        <p class="modal-error" id="qmodal-error"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeQuestionModal()">Batal</button>
+        <button class="btn-primary btn-modal-submit" onclick="saveQuestionModal()">💾 Simpan Soal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
