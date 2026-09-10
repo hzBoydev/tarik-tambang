@@ -871,24 +871,16 @@ async function hostProcessAnswer(team, idx) {
     }
 
   } else {
-    // WRONG: Penalty! Rope moves towards opponent
+    // WRONG: Tambang TETAP (tidak bergerak). Hanya ubah status tim menjadi 'wrong'
     if (team === 'A') {
-      ropePos++; // Moves towards B
       teamAStatus = 'wrong';
     } else {
-      ropePos--; // Moves towards A
       teamBStatus = 'wrong';
     }
 
-    const winTarget = settings.winTarget;
-    let winner = null;
-    let winReason = null;
-    if (ropePos <= -winTarget) { winner = 'A'; winReason = 'knockout'; }
-    if (ropePos >= winTarget) { winner = 'B'; winReason = 'knockout'; }
-
     const bothWrong = (teamAStatus === 'wrong' && teamBStatus === 'wrong');
 
-    if (bothWrong || winner) {
+    if (bothWrong) {
       stopLocalTimer();
 
       const lastResult = {
@@ -896,10 +888,7 @@ async function hostProcessAnswer(team, idx) {
         team,
         idx,
         correctIdx: q.answer,
-        message: winner 
-          ? `❌ Jawaban salah!\nTali tertarik ke garis batas!`
-          : `❌ KEDUA TIM SALAH!\nTali bergeser & soal lanjut.\nKunci: ${LABELS[q.answer]}`,
-        winner
+        message: `❌ KEDUA TIM SALAH!\nSoal lanjut ke nomor berikutnya.\nKunci: ${LABELS[q.answer]}`
       };
 
       await db.ref(`rooms/${roomCode}/game`).update({
@@ -915,20 +904,16 @@ async function hostProcessAnswer(team, idx) {
         pendingAnswer: null
       });
 
-      if (winner) {
-        setTimeout(() => endGameOnFirebase(winner, scoreA, scoreB, settings, winReason, totalTimeA, answerCountA, totalTimeB, answerCountB), 2800);
-      } else {
-        setTimeout(() => advanceQuestion(), 2800);
-      }
+      setTimeout(() => advanceQuestion(), 2800);
 
     } else {
-      // One team wrong, opponent STILL HAS A CHANCE!
+      // One team wrong, opponent STILL HAS A CHANCE! Tambang tetap tidak berpindah.
       const lastResult = {
         type: 'turn_chance',
         team,
         idx,
         correctIdx: q.answer,
-        message: `❌ ${answeredTeamName} SALAH!\nTali bergeser ke ${opponentTeamName}.\nKesempatan untuk ${opponentTeamName} menjawab!`
+        message: `❌ ${answeredTeamName} SALAH!\nKesempatan untuk ${opponentTeamName} menjawab!`
       };
 
       await db.ref(`rooms/${roomCode}/game`).update({
@@ -1167,7 +1152,7 @@ function updateSpecStatusBar(game, settings) {
   } else if (game.lastResult?.type === 'turn_chance') {
     const wrongTeam = game.lastResult.team === 'A' ? nameA : nameB;
     const chanceTeam = game.lastResult.team === 'A' ? nameB : nameA;
-    bar.textContent = `⚡ ${wrongTeam} salah! Tarikan tali bergeser. Kesempatan untuk ${chanceTeam} menjawab!`;
+    bar.textContent = `⚡ ${wrongTeam} salah! Kesempatan untuk ${chanceTeam} menjawab!`;
     bar.className = 'status-bar status-turn-chance';
   } else if (game.lastResult?.type === 'correct') {
     const winTeam = game.lastResult.team === 'A' ? nameA : nameB;
@@ -1238,12 +1223,12 @@ function showPlayerFeedback(game, settings, q) {
     if (myAnswered) {
       typeClass = 'feedback-wrong';
       title = '❌ JAWABAN KAMU SALAH!';
-      sub = `Tali bergeser ke ${oppTeamName}.<br><span style="color:#ffd32a; font-size:1.1em; display:inline-block; margin-top:8px;">⏳ Tunggu lawan menjawab...</span>`;
+      sub = `<span style="color:#ffd32a; font-size:1.1em; display:inline-block; margin-top:6px;">⏳ Tunggu tim lawan menjawab...</span>`;
       if (isNewResult && window.Sound) Sound.play('wrong');
     } else {
       typeClass = 'feedback-correct';
       title = '⚡ LAWAN SALAH!';
-      sub = `Tali tertarik ke tim kamu.<br><span style="color:#10b981; font-size:1.1em; display:inline-block; margin-top:8px;">🎯 Giliran kamu menjawab sekarang!</span>`;
+      sub = `<span style="color:#10b981; font-size:1.1em; display:inline-block; margin-top:6px;">🎯 Giliran tim kamu menjawab sekarang!</span>`;
       if (isNewResult && window.Sound) Sound.play('go');
       setTimeout(() => hidePlayerFeedback(), 2000);
     }
