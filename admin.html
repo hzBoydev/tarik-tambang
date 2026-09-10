@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin Host – Tarik Tambang Quiz</title>
+  <meta name="description" content="Panel Admin Host Game Tarik Tambang Quiz. Kelola Bank Soal, Nama Tim & Riwayat Pertandingan." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body class="admin-page-body">
+
+  <!-- FLOATING AUDIO CONTROLS -->
+  <div class="floating-audio-bar">
+    <button id="btn-toggle-music" class="btn-audio-toggle" onclick="Sound.toggleMusic()" title="Toggle Musik">
+      🎵 <span class="audio-label">Musik: ON</span>
+    </button>
+    <button id="btn-toggle-sfx" class="btn-audio-toggle" onclick="Sound.toggleSFX()" title="Toggle Efek Suara">
+      🔊 <span class="audio-label">Suara: ON</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   ADMIN AUTH BARRIER (Password Gate)       -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="admin-auth-barrier" class="admin-auth-overlay active">
+    <div class="admin-auth-card">
+      <div class="admin-auth-header">
+        <span class="auth-icon-badge">🔐</span>
+        <h2 class="auth-title">Akses Khusus Admin Host</h2>
+        <p class="auth-desc">Masukkan password host master untuk mengelola Tarik Tambang Quiz</p>
+      </div>
+      <div class="admin-auth-body">
+        <div class="input-field-wrap">
+          <input type="password" id="admin-gate-pass" placeholder="Masukkan Password Host..." autocomplete="off" />
+          <button type="button" class="btn-toggle-eye" onclick="toggleGatePassVisibility()">👁️</button>
+        </div>
+        <p class="modal-error" id="admin-gate-error"></p>
+      </div>
+      <div class="admin-auth-footer">
+        <a href="index.html" class="btn-modal-cancel" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">🏠 Kembali ke Game</a>
+        <button class="btn-primary btn-modal-submit" onclick="submitAdminGatePass()">Buka Panel ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   ADMIN DASHBOARD CONTAINER               -->
+  <!-- ══════════════════════════════════════════ -->
+  <main id="admin-main-content" class="admin-dashboard-wrap" style="display:none;">
+    <div class="admin-container">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <div class="admin-topbar">
+        <a href="index.html" class="btn-back" style="text-decoration:none;">🎮 Ke Halaman Game</a>
+        <div class="admin-badge">👑 Mode Admin Host</div>
+      </div>
+
+      <!-- HEADER HERO -->
+      <div class="admin-header">
+        <div class="admin-title-wrap">
+          <span class="admin-icon">⚙️</span>
+          <div>
+            <h1 class="admin-title">Panel Kontrol Tarik Tambang Quiz</h1>
+            <p class="admin-subtitle">Kelola Bank Soal, Kustomisasi Nama Tim, dan Riwayat Pertandingan</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN TABS -->
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" id="tab-btn-questions" onclick="switchAdminTab('questions')">
+          📚 Bank Soal (<span id="admin-q-count">0</span>)
+        </button>
+        <button class="admin-tab-btn" id="tab-btn-teams" onclick="switchAdminTab('teams')">
+          🏷️ Nama Tim & Password
+        </button>
+        <button class="admin-tab-btn" id="tab-btn-history" onclick="switchAdminTab('history')">
+          📜 Riwayat Match (<span id="admin-hist-count">0</span>)
+        </button>
+      </div>
+
+      <!-- TAB CONTENT: QUESTIONS -->
+      <div id="tab-content-questions" class="admin-tab-panel active">
+        <div class="admin-panel-toolbar">
+          <div class="admin-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="admin-q-search" placeholder="Cari pertanyaan soal..." oninput="filterAdminQuestions()" />
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn-admin-action-btn btn-reset-q" onclick="resetQuestionsToDefault()">
+              🔄 Reset Default (20 Soal)
+            </button>
+            <button class="btn-admin-action-btn btn-add-q" onclick="openAddQuestionModal()">
+              ➕ Tambah Soal
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-questions-list" id="admin-questions-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: TEAMS & PASS -->
+      <div id="tab-content-teams" class="admin-tab-panel">
+        <div class="admin-card teams-config-card">
+          <h2 class="admin-card-title">🏷️ Kustomisasi Nama Tim</h2>
+          <p class="admin-card-sub">Nama tim ini akan diterapkan saat membuat room baru.</p>
+          
+          <div class="teams-input-grid">
+            <div class="team-config-box team-a-box">
+              <div class="team-config-header">
+                <span class="team-dot dot-a">🔴</span>
+                <h3>Tim A (Sisi Kiri)</h3>
+              </div>
+              <label for="admin-team-a-name">Nama Tim A:</label>
+              <input type="text" id="admin-team-a-name" placeholder="Contoh: Garuda Merah" />
+            </div>
+
+            <div class="team-config-box team-b-box">
+              <div class="team-config-header">
+                <span class="team-dot dot-b">🔵</span>
+                <h3>Tim B (Sisi Kanan)</h3>
+              </div>
+              <label for="admin-team-b-name">Nama Tim B:</label>
+              <input type="text" id="admin-team-b-name" placeholder="Contoh: Harimau Biru" />
+            </div>
+          </div>
+
+          <div class="setting-divider" style="margin: 24px 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
+
+          <h2 class="admin-card-title">🔐 Ganti Password Host Master</h2>
+          <p class="admin-card-sub">Password untuk akses menu "Buat Room" dan "Panel Admin".</p>
+          <div style="max-width: 380px;">
+            <label for="admin-host-pass-new" style="display:block; font-size: 0.9rem; font-weight:700; color:var(--color-muted); margin-bottom: 8px;">Password Host Baru:</label>
+            <input type="text" id="admin-host-pass-new" placeholder="Masukkan password baru..." style="width:100%; padding:14px; background:var(--color-surface); border:2px solid rgba(255,255,255,0.15); border-radius:12px; color:#fff; font-size:1.05rem; outline:none;" />
+          </div>
+
+          <div class="team-config-actions" style="margin-top: 18px;">
+            <button class="btn-primary btn-save-team" onclick="saveAdminSettings()">💾 Simpan Semua Pengaturan</button>
+            <span class="save-status-msg" id="team-save-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: HISTORY -->
+      <div id="tab-content-history" class="admin-tab-panel">
+        <div class="admin-history-toolbar">
+          <h2 class="admin-card-title">📜 Catatan Riwayat Pertandingan</h2>
+          <button class="btn-danger-outline" onclick="clearMatchHistory()">🗑️ Hapus Semua Riwayat</button>
+        </div>
+        <div class="admin-history-list" id="admin-history-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   MODAL: TAMBAH / EDIT SOAL                -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="modal-question" class="modal-overlay">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <span class="modal-icon" id="qmodal-icon">✏️</span>
+        <h2 class="modal-title" id="qmodal-title">Tambah Soal Baru</h2>
+        <p class="modal-desc">Tuliskan pertanyaan, 4 pilihan jawaban, dan tandai radio button pada kunci jawaban BENAR</p>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="qmodal-edit-index" value="-1" />
+        
+        <div class="form-group">
+          <label for="qmodal-question">Teks Soal / Pertanyaan</label>
+          <textarea id="qmodal-question" rows="3" placeholder="Tuliskan pertanyaan soal di sini..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Pilihan Jawaban (Klik radio pada jawaban yang BENAR):</label>
+          <div class="choices-inputs">
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-0" value="0" checked />
+              <span class="choice-tag tag-opt-a">A</span>
+              <input type="text" id="qmodal-choice-0" placeholder="Pilihan Jawaban A..." />
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-1" value="1" />
+              <span class="choice-tag tag-opt-b">B</span>
+              <input type="text" id="qmodal-choice-1" placeholder="Pilihan Jawaban B..." />
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-2" value="2" />
+              <span class="choice-tag tag-opt-c">C</span>
+              <input type="text" id="qmodal-choice-2" placeholder="Pilihan Jawaban C..." />
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="qmodal-correct" id="qmodal-radio-3" value="3" />
+              <span class="choice-tag tag-opt-d">D</span>
+              <input type="text" id="qmodal-choice-3" placeholder="Pilihan Jawaban D..." />
+            </div>
+          </div>
+        </div>
+
+        <p class="modal-error" id="qmodal-error"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeQuestionModal()">Batal</button>
+        <button class="btn-primary btn-modal-submit" onclick="saveQuestionModal()">💾 Simpan Soal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (compat v10) & Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="audio.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -3,17 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tarik Tambang Digital – Multiplayer Online Pancasila</title>
-  <meta name="description" content="Game Tarik Tambang Kuis Pancasila online multiplayer. Host buat room, 2 tim bertanding dari device masing-masing secara real-time." />
+  <title>Tarik Tambang Quiz – Game Kuis Interaktif Multiplayer</title>
+  <meta name="description" content="Tarik Tambang Quiz - Game kuis seru multiplayer online. Host buat room, 2 tim bertanding tarik tambang secara real-time dari HP/Laptop masing-masing!" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;600;700;800;900&family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
 <body>
 
   <!-- CONFETTI CANVAS -->
   <canvas id="confetti-canvas"></canvas>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--   🎵 FLOATING AUDIO CONTROLS               -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="floating-audio-bar">
+    <button id="btn-toggle-music" class="btn-audio-toggle" onclick="Sound.toggleMusic()" title="Toggle Musik Latar">
+      🎵 <span class="audio-label">Musik: ON</span>
+    </button>
+    <button id="btn-toggle-sfx" class="btn-audio-toggle" onclick="Sound.toggleSFX()" title="Toggle Efek Suara">
+      🔊 <span class="audio-label">Suara: ON</span>
+    </button>
+  </div>
 
   <!-- ══════════════════════════════════════════ -->
   <!--   MODAL: HOST PASSWORD                    -->
@@ -23,7 +35,7 @@
       <div class="modal-header">
         <span class="modal-icon">🔐</span>
         <h2 class="modal-title">Akses Khusus Host</h2>
-        <p class="modal-desc">Masukkan password master untuk melanjutkan</p>
+        <p class="modal-desc">Masukkan password master host untuk melanjutkan</p>
       </div>
       <div class="modal-body">
         <div class="input-field-wrap">
@@ -45,15 +57,22 @@
   <section id="screen-home" class="screen active">
     <div class="home-container">
       <div class="home-hero">
-        <div class="home-garuda">🦅</div>
-        <h1 class="home-title">Tarik Tambang Digital</h1>
-        <p class="home-subtitle">Kuis Interaktif Pancasila · Multiplayer Online</p>
+        <span class="home-badge-pill">🇮🇩 KUIS IDEOLOGI PANCASILA</span>
+        <div class="home-flag-emblem">🇮🇩</div>
+        <h1 class="home-title">Tarik Tambang Quiz</h1>
+        <p class="home-subtitle">Adu Cepat & Pengetahuan Pancasila · Tarik Tambang Merah Putih</p>
         <div class="home-rope-deco">
-          <span class="deco-team deco-a">🔴</span>
+          <div class="home-puller-figure puller-left">
+            <span class="puller-emoji">🏃‍♂️</span>
+            <span class="puller-flag">🔴</span>
+          </div>
           <div class="deco-rope-line"></div>
-          <span class="deco-knot">🟡</span>
+          <span class="deco-knot">🪢</span>
           <div class="deco-rope-line"></div>
-          <span class="deco-team deco-b">🔵</span>
+          <div class="home-puller-figure puller-right">
+            <span class="puller-flag">🔵</span>
+            <span class="puller-emoji">🏃‍♂️</span>
+          </div>
         </div>
       </div>
 
@@ -61,8 +80,8 @@
         <button class="btn-home-action btn-host-action" id="btn-go-create" onclick="promptHostPassword('create-room')">
           <span class="home-btn-icon">🏠</span>
           <div class="home-btn-text">
-            <span class="home-btn-title">Buat Room</span>
-            <span class="home-btn-sub">Host · Atur & pantau pertandingan (Khusus Host)</span>
+            <span class="home-btn-title">Buat Room Pertandingan</span>
+            <span class="home-btn-sub">Host · Atur durasi, skor, & pantau jalannya game</span>
           </div>
           <span class="home-btn-arrow">›</span>
         </button>
@@ -70,23 +89,14 @@
         <button class="btn-home-action btn-join-action" id="btn-go-join" onclick="goToJoinRoom()">
           <span class="home-btn-icon">🎮</span>
           <div class="home-btn-text">
-            <span class="home-btn-title">Masuk Room</span>
-            <span class="home-btn-sub">Pemain · Masukkan kode dari host</span>
-          </div>
-          <span class="home-btn-arrow">›</span>
-        </button>
-
-        <button class="btn-home-action btn-admin-action" id="btn-go-admin" onclick="promptHostPassword('admin')">
-          <span class="home-btn-icon">⚙️</span>
-          <div class="home-btn-text">
-            <span class="home-btn-title">Panel Admin</span>
-            <span class="home-btn-sub">Kelola Bank Soal, Nama Tim & Riwayat Pertandingan</span>
+            <span class="home-btn-title">Masuk Room (Pemain)</span>
+            <span class="home-btn-sub">Pemain · Gabung Tim A / Tim B dengan kode room</span>
           </div>
           <span class="home-btn-arrow">›</span>
         </button>
       </div>
 
-      <p class="home-footer">🇮🇩 Belajar Pancasila dengan cara yang seru!</p>
+      <p class="home-footer">🇮🇩 Belajar seru & asyik bersama teman sekelas!</p>
     </div>
   </section>
 
@@ -99,14 +109,34 @@
       <div class="cr-header">
         <div class="cr-icon">⚙️</div>
         <h1 class="cr-title">Pengaturan Room</h1>
-        <p class="cr-subtitle">Atur permainan sebelum membuat room</p>
+        <p class="cr-subtitle">Atur jumlah soal, skor kemenangan, & waktu per soal</p>
       </div>
 
       <div class="settings-card">
+        <!-- PENGATURAN JUMLAH SOAL PER GAME -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="cr-q-count">📚 Soal per Game</label>
+            <p class="setting-hint">Berapa banyak soal yang dimainkan di sesi ini</p>
+          </div>
+          <div class="setting-input-wrap">
+            <select id="cr-q-count">
+              <option value="5">5 Soal</option>
+              <option value="10" selected>10 Soal</option>
+              <option value="15">15 Soal</option>
+              <option value="20">20 Soal</option>
+              <option value="999">Semua Soal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <!-- PENGATURAN SKOR KEMENANGAN -->
         <div class="setting-row">
           <div class="setting-info">
             <label for="cr-win-target">🏆 Skor Kemenangan</label>
-            <p class="setting-hint">Berapa poin untuk menarik tali ke ujung</p>
+            <p class="setting-hint">Selisih poin tarikan tali hingga garis batas</p>
           </div>
           <div class="setting-input-wrap">
             <input type="number" id="cr-win-target" min="3" max="10" value="5" />
@@ -116,20 +146,26 @@
 
         <div class="setting-divider"></div>
 
+        <!-- PENGATURAN WAKTU PER SOAL (Dengan 5 detik membaca otomatis) -->
         <div class="setting-row">
           <div class="setting-info">
             <label for="cr-timer">⏱️ Waktu per Soal</label>
-            <p class="setting-hint">Waktu yang diberikan untuk setiap soal</p>
+            <p class="setting-hint">5 detik pertama baca soal + sisa waktu jawab</p>
           </div>
           <div class="setting-input-wrap">
-            <input type="number" id="cr-timer" min="5" max="30" value="15" />
-            <span class="setting-unit">detik</span>
+            <select id="cr-timer">
+              <option value="10">10s (5s Baca + 5s Jawab)</option>
+              <option value="15" selected>15s (5s Baca + 10s Jawab)</option>
+              <option value="20">20s (5s Baca + 15s Jawab)</option>
+              <option value="25">25s (5s Baca + 20s Jawab)</option>
+              <option value="30">30s (5s Baca + 25s Jawab)</option>
+            </select>
           </div>
         </div>
       </div>
 
       <button class="btn-primary btn-create-room-action" id="btn-create-room" onclick="createRoom()">
-        🚀 Buat Room
+        🚀 Buat Room Pertandingan
       </button>
     </div>
   </section>
@@ -139,24 +175,24 @@
   <!-- ══════════════════════════════════════════ -->
   <section id="screen-host-lobby" class="screen">
     <div class="host-lobby-container">
-      <h1 class="lobby-title">🏠 Room Siap!</h1>
+      <h1 class="lobby-title">🏠 Room Pertandingan Siap!</h1>
 
       <div class="room-code-card">
         <span class="room-code-label">Kode Room</span>
         <div class="room-code-big" id="host-room-code">------</div>
-        <p class="room-code-hint">Bagikan kode ini atau gunakan link di bawah</p>
+        <p class="room-code-hint">Bagikan kode ini kepada pemain untuk masuk</p>
       </div>
 
       <div class="share-section">
         <div class="share-card share-a">
-          <div class="share-team-header">🔴 Tim A</div>
+          <div class="share-team-header">🔴 Tim A (Sisi Kiri)</div>
           <div class="share-link-row">
             <input type="text" readonly id="link-team-a" class="share-link-input" />
             <button class="btn-copy" id="copy-a" onclick="copyLink('A')">📋 Copy</button>
           </div>
         </div>
         <div class="share-card share-b">
-          <div class="share-team-header">🔵 Tim B</div>
+          <div class="share-team-header">🔵 Tim B (Sisi Kanan)</div>
           <div class="share-link-row">
             <input type="text" readonly id="link-team-b" class="share-link-input" />
             <button class="btn-copy" id="copy-b" onclick="copyLink('B')">📋 Copy</button>
@@ -181,7 +217,7 @@
       </div>
 
       <button class="btn-primary btn-host-start-game" id="btn-host-start" onclick="hostStartGame()" disabled>
-        ▶ Mulai Game
+        ▶ Mulai Game Sekarang
       </button>
       <p class="start-hint" id="start-hint-text">Menunggu kedua tim bergabung...</p>
     </div>
@@ -195,8 +231,8 @@
       <button class="btn-back" onclick="showScreen('home')">← Kembali</button>
       <div class="join-header">
         <div class="join-icon">🎮</div>
-        <h1 class="join-title">Masuk Room</h1>
-        <p class="join-subtitle">Masukkan kode room dari host</p>
+        <h1 class="join-title">Masuk Room Game</h1>
+        <p class="join-subtitle">Masukkan kode 6 huruf dari Host</p>
       </div>
 
       <div class="join-card">
@@ -211,7 +247,7 @@
         </div>
 
         <div class="join-team-group">
-          <label>Pilih Tim</label>
+          <label>Pilih Tim Kamu</label>
           <div class="team-picker">
             <button class="team-pick-btn active" id="pick-team-a" onclick="pickTeam('A')">
               <span class="team-pick-emoji">🔴</span>
@@ -224,8 +260,8 @@
           </div>
         </div>
 
-        <button class="btn-primary btn-join-action" id="btn-join-room" onclick="joinRoom()">
-          🚀 Masuk
+        <button class="btn-primary btn-join-action" id="btn-join-room" onclick="joinRoom()" style="width:100%;">
+          🚀 Masuk Pertandingan
         </button>
         <p class="join-error" id="join-error"></p>
       </div>
@@ -238,7 +274,7 @@
   <section id="screen-player-lobby" class="screen">
     <div class="player-lobby-container">
       <div class="pl-team-badge" id="pl-team-badge">TIM A 🔴</div>
-      <h2 class="pl-title">Berhasil Bergabung!</h2>
+      <h2 class="pl-title">Siap Bertanding!</h2>
       <div class="pl-room-info">Room: <strong id="pl-room-code">------</strong></div>
 
       <div class="pl-waiting-anim">
@@ -247,7 +283,7 @@
           <div class="dot"></div>
           <div class="dot"></div>
         </div>
-        <p class="pl-waiting-text">Menunggu host memulai game...</p>
+        <p class="pl-waiting-text">Menunggu host memulai permainan...</p>
       </div>
 
       <div class="pl-players">
@@ -265,24 +301,23 @@
   </section>
 
   <!-- ══════════════════════════════════════════ -->
-  <!--   SCREEN: SPECTATOR (Host – Game View)    -->
-  <!-- ══════════════════════════════════════════ -->
-  <section id="screen-spectator" class="screen">
-    <div class="spectator-room-badge" id="spec-room-badge">Room: ------</div>
-
-    <!-- HOST SPECTATOR NOTICE -->
-    <div class="host-view-notice">
-      <span class="hvn-icon">👁️</span>
-      <span class="hvn-text"><strong>Layar Tampilan Host:</strong> Anda memantau jalannya pertandingan. Tombol di bawah tidak bisa diklik di sini karena pemain menjawab langsung dari HP / laptop mereka!</span>
+  <section id="screen-spectator" class="screen screen-fullscreen-spec">
+    <div class="spectator-topbar">
+      <div class="spectator-room-badge" id="spec-room-badge">Room: ------</div>
+      <div class="host-view-notice">
+        <span class="hvn-icon">👁️</span>
+        <span class="hvn-text">Layar Host / Proyektor · Pemain Menjawab Langsung dari HP / Laptop Masing-masing</span>
+      </div>
     </div>
 
+    <!-- GAME HEADER -->
     <header class="game-header">
       <div class="team-score score-a">
         <span class="team-name" id="spec-team-name-a">TIM A 🔴</span>
         <span class="score-count" id="spec-score-a">0</span>
       </div>
       <div class="header-center">
-        <span class="question-counter" id="spec-counter">Soal 1 / 20</span>
+        <span class="question-counter" id="spec-counter">Soal 1 / 10</span>
         <div class="timer-ring">
           <svg viewBox="0 0 60 60" id="spec-timer-svg">
             <circle cx="30" cy="30" r="26" class="timer-bg" />
@@ -297,26 +332,172 @@
       </div>
     </header>
 
-    <div class="rope-section">
-      <div class="rope-arena">
-        <div class="rope-flag flag-a">🚩</div>
-        <div class="rope-track">
-          <div class="win-line win-line-a" id="spec-win-line-a"></div>
-          <div class="win-line win-line-b" id="spec-win-line-b"></div>
-          <div class="rope-body">
-            <div class="rope-segment seg-a"></div>
-            <div class="rope-segment seg-b"></div>
+    <!-- CARTOON TUG OF WAR ARENA -->
+    <div class="rope-section" id="tug-arena-section">
+      <div class="tug-stage">
+        <!-- TEAM A SQUAD (MERAH) -->
+        <div class="squad-wrap squad-a" id="squad-a">
+          <div class="squad-info">
+            <span class="squad-badge badge-a" id="spec-char-label-a">Tim A</span>
+            <span class="squad-aura aura-a">🔥</span>
           </div>
-          <div class="rope-knot" id="spec-rope-knot">
-            <div class="knot-inner">🟡</div>
+          <div class="athletes-row">
+            <!-- Anchor Puller A2 -->
+            <div class="athlete-box athlete-anchor">
+              <svg class="athlete-svg" viewBox="0 0 85 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="dust-fx"><ellipse cx="14" cy="84" rx="8" ry="3" fill="rgba(255,211,42,0.3)"/><path d="M10 80 Q6 76 2 78" stroke="#ffd32a" stroke-width="2" stroke-linecap="round"/></g>
+                <g class="athlete-body-a">
+                  <path d="M34 52 L14 82" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M34 52 L14 82" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="12" cy="83" rx="8" ry="4" fill="#e61937"/>
+                  <path d="M44 52 L40 68 L30 83" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M44 52 L40 68 L30 83" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="28" cy="84" rx="8" ry="4" fill="#e61937"/>
+                  <path d="M28 46 L48 46 L45 56 L30 56 Z" fill="#991b1b" stroke="#190507" stroke-width="2"/>
+                  <path d="M32 26 L48 26 L44 48 L28 48 Z" fill="#e61937" stroke="#190507" stroke-width="2"/>
+                  <line x1="38" y1="26" x2="36" y2="48" stroke="#ffffff" stroke-width="2.5"/>
+                  <circle cx="36" cy="16" r="11" fill="#fed7aa" stroke="#190507" stroke-width="1.8"/>
+                  <path d="M26 12 Q33 2 43 9 Q47 7 47 14" fill="#1f2937"/>
+                  <rect x="26" y="12" width="20" height="5" rx="1.5" fill="#e61937"/>
+                  <rect x="26" y="14" width="20" height="2.5" rx="1" fill="#ffffff"/>
+                  <path d="M26 13 Q20 9 17 14 Q20 17 26 15" fill="#e61937"/>
+                  <path d="M35 15 L38 17 M38 15 L35 17" stroke="#190507" stroke-width="1.2"/>
+                  <path d="M39 20 Q42 19 40 22 Z" fill="#991b1b"/>
+                  <path class="sweat-anim" d="M28 17 Q26 19 28 21 Q30 19 28 17" fill="#38bdf8"/>
+                  <path d="M36 29 L54 38 L68 36" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M36 29 L54 38 L68 36" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M42 29 L60 35 L76 33" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M42 29 L60 35 L76 33" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <circle cx="68" cy="36" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                  <circle cx="76" cy="33" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                </g>
+              </svg>
+            </div>
+            <!-- Lead Puller A1 -->
+            <div class="athlete-box athlete-lead">
+              <svg class="athlete-svg" viewBox="0 0 85 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="dust-fx"><ellipse cx="16" cy="84" rx="8" ry="3" fill="rgba(255,211,42,0.3)"/><path d="M12 80 Q8 76 4 78" stroke="#ffd32a" stroke-width="2" stroke-linecap="round"/></g>
+                <g class="athlete-body-a">
+                  <path d="M36 52 L16 82" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M36 52 L16 82" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="14" cy="83" rx="8" ry="4" fill="#e61937"/>
+                  <path d="M46 52 L42 68 L32 83" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M46 52 L42 68 L32 83" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="30" cy="84" rx="8" ry="4" fill="#e61937"/>
+                  <path d="M30 46 L50 46 L47 56 L32 56 Z" fill="#991b1b" stroke="#190507" stroke-width="2"/>
+                  <path d="M34 26 L50 26 L46 48 L30 48 Z" fill="#e61937" stroke="#190507" stroke-width="2"/>
+                  <line x1="40" y1="26" x2="38" y2="48" stroke="#ffffff" stroke-width="2.5"/>
+                  <circle cx="38" cy="16" r="11" fill="#fed7aa" stroke="#190507" stroke-width="1.8"/>
+                  <path d="M28 12 Q35 2 45 9 Q49 7 49 14" fill="#1f2937"/>
+                  <rect x="28" y="12" width="20" height="5" rx="1.5" fill="#e61937"/>
+                  <rect x="28" y="14" width="20" height="2.5" rx="1" fill="#ffffff"/>
+                  <path d="M28 13 Q22 9 19 14 Q22 17 28 15" fill="#e61937"/>
+                  <path d="M37 15 L40 17 M40 15 L37 17" stroke="#190507" stroke-width="1.2"/>
+                  <path d="M41 20 Q44 19 42 22 Z" fill="#991b1b"/>
+                  <path class="sweat-anim" d="M30 17 Q28 19 30 21 Q32 19 30 17" fill="#38bdf8"/>
+                  <path d="M38 29 L56 38 L72 36" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M38 29 L56 38 L72 36" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M44 29 L62 35 L80 33" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M44 29 L62 35 L80 33" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <circle cx="72" cy="36" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                  <circle cx="80" cy="33" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                </g>
+              </svg>
+            </div>
           </div>
         </div>
-        <div class="rope-flag flag-b">🚩</div>
-      </div>
-      <div class="rope-labels">
-        <span class="rope-label-a" id="spec-rope-label-a">← Tim A</span>
-        <span class="rope-label-center">TENGAH</span>
-        <span class="rope-label-b" id="spec-rope-label-b">Tim B →</span>
+
+        <!-- CENTER ROPE ARENA -->
+        <div class="rope-arena-center">
+          <div class="rope-track">
+            <div class="win-line win-line-a" id="spec-win-line-a" title="Garis Kemenangan A"></div>
+            <div class="win-line win-line-b" id="spec-win-line-b" title="Garis Kemenangan B"></div>
+            <div class="rope-center-mark"></div>
+            <div class="rope-body"></div>
+            <div class="rope-knot" id="spec-rope-knot">
+              <div class="knot-ribbon ribbon-red"></div>
+              <div class="knot-inner">🪢</div>
+              <div class="knot-ribbon ribbon-blue"></div>
+            </div>
+          </div>
+          <div class="rope-labels">
+            <span class="rope-label-a" id="spec-rope-label-a">← Tim A</span>
+            <span class="rope-label-center">🎯 GARIS TENGAH</span>
+            <span class="rope-label-b" id="spec-rope-label-b">Tim B →</span>
+          </div>
+        </div>
+
+        <!-- TEAM B SQUAD (BIRU) -->
+        <div class="squad-wrap squad-b" id="squad-b">
+          <div class="squad-info">
+            <span class="squad-aura aura-b">⚡</span>
+            <span class="squad-badge badge-b" id="spec-char-label-b">Tim B</span>
+          </div>
+          <div class="athletes-row">
+            <!-- Lead Puller B1 -->
+            <div class="athlete-box athlete-lead">
+              <svg class="athlete-svg" viewBox="0 0 85 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="dust-fx"><ellipse cx="69" cy="84" rx="8" ry="3" fill="rgba(59,130,246,0.3)"/><path d="M73 80 Q77 76 81 78" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/></g>
+                <g class="athlete-body-b">
+                  <path d="M49 52 L69 82" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M49 52 L69 82" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="71" cy="83" rx="8" ry="4" fill="#2563eb"/>
+                  <path d="M39 52 L43 68 L53 83" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M39 52 L43 68 L53 83" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="55" cy="84" rx="8" ry="4" fill="#2563eb"/>
+                  <path d="M35 46 L55 46 L53 56 L38 56 Z" fill="#1e40af" stroke="#190507" stroke-width="2"/>
+                  <path d="M35 26 L51 26 L55 48 L39 48 Z" fill="#2563eb" stroke="#190507" stroke-width="2"/>
+                  <line x1="45" y1="26" x2="47" y2="48" stroke="#ffffff" stroke-width="2.5"/>
+                  <circle cx="49" cy="16" r="11" fill="#fed7aa" stroke="#190507" stroke-width="1.8"/>
+                  <path d="M59 12 Q52 2 42 9 Q38 7 38 14" fill="#1f2937"/>
+                  <rect x="39" y="12" width="20" height="5" rx="1.5" fill="#2563eb"/>
+                  <rect x="39" y="14" width="20" height="2.5" rx="1" fill="#ffffff"/>
+                  <path d="M59 13 Q65 9 68 14 Q65 17 59 15" fill="#2563eb"/>
+                  <path d="M48 15 L45 17 M45 15 L48 17" stroke="#190507" stroke-width="1.2"/>
+                  <path d="M44 20 Q41 19 43 22 Z" fill="#1e40af"/>
+                  <path class="sweat-anim" d="M55 17 Q57 19 55 21 Q53 19 55 17" fill="#38bdf8"/>
+                  <path d="M47 29 L29 38 L13 36" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M47 29 L29 38 L13 36" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M41 29 L23 35 L5 33" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M41 29 L23 35 L5 33" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <circle cx="13" cy="36" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                  <circle cx="5" cy="33" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                </g>
+              </svg>
+            </div>
+            <!-- Anchor Puller B2 -->
+            <div class="athlete-box athlete-anchor">
+              <svg class="athlete-svg" viewBox="0 0 85 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="dust-fx"><ellipse cx="71" cy="84" rx="8" ry="3" fill="rgba(59,130,246,0.3)"/><path d="M75 80 Q79 76 83 78" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/></g>
+                <g class="athlete-body-b">
+                  <path d="M51 52 L71 82" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M51 52 L71 82" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="73" cy="83" rx="8" ry="4" fill="#2563eb"/>
+                  <path d="M41 52 L45 68 L55 83" stroke="#190507" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M41 52 L45 68 L55 83" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+                  <ellipse cx="57" cy="84" rx="8" ry="4" fill="#2563eb"/>
+                  <path d="M37 46 L57 46 L55 56 L40 56 Z" fill="#1e40af" stroke="#190507" stroke-width="2"/>
+                  <path d="M37 26 L53 26 L57 48 L41 48 Z" fill="#2563eb" stroke="#190507" stroke-width="2"/>
+                  <line x1="47" y1="26" x2="49" y2="48" stroke="#ffffff" stroke-width="2.5"/>
+                  <circle cx="51" cy="16" r="11" fill="#fed7aa" stroke="#190507" stroke-width="1.8"/>
+                  <path d="M61 12 Q54 2 44 9 Q40 7 40 14" fill="#1f2937"/>
+                  <rect x="41" y="12" width="20" height="5" rx="1.5" fill="#2563eb"/>
+                  <rect x="41" y="14" width="20" height="2.5" rx="1" fill="#ffffff"/>
+                  <path d="M61 13 Q67 9 70 14 Q67 17 61 15" fill="#2563eb"/>
+                  <path d="M50 15 L47 17 M47 15 L50 17" stroke="#190507" stroke-width="1.2"/>
+                  <path d="M46 20 Q43 19 45 22 Z" fill="#1e40af"/>
+                  <path class="sweat-anim" d="M57 17 Q59 19 57 21 Q55 19 57 17" fill="#38bdf8"/>
+                  <path d="M49 29 L31 38 L17 36" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M49 29 L31 38 L17 36" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M43 29 L25 35 L9 33" stroke="#190507" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M43 29 L25 35 L9 33" stroke="#fed7aa" stroke-width="5" stroke-linecap="round"/>
+                  <circle cx="17" cy="36" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                  <circle cx="9" cy="33" r="4.5" fill="#fed7aa" stroke="#190507" stroke-width="1.5"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -324,8 +505,10 @@
       <div class="feedback-content" id="spec-feedback-content"></div>
     </div>
 
+    <!-- QUESTION SECTION -->
     <main class="question-section">
       <div class="question-card" id="spec-question-card">
+        <div id="spec-phase-badge" class="phase-indicator-badge reading">📖 WAKTU MEMBACA SOAL (5s)</div>
         <p class="question-number" id="spec-q-number">Soal 1</p>
         <h2 class="question-text" id="spec-q-text">Menunggu soal dimuat...</h2>
         <div class="choices-grid spec-choices-grid" id="spec-choices-grid"></div>
@@ -343,7 +526,7 @@
       <div class="pg-header">
         <div class="pg-team-badge" id="pg-team-badge">TIM A 🔴</div>
         <div class="pg-meta">
-          <span class="pg-counter" id="pg-counter">Soal 1/20</span>
+          <span class="pg-counter" id="pg-counter">Soal 1/10</span>
           <div class="pg-timer-ring">
             <svg viewBox="0 0 60 60" id="pg-timer-svg">
               <circle cx="30" cy="30" r="26" class="timer-bg" />
@@ -355,11 +538,16 @@
       </div>
 
       <div class="pg-question-box">
+        <div id="pg-phase-badge" class="phase-indicator-badge reading">📖 WAKTU MEMBACA SOAL (5s)</div>
         <h2 class="pg-question-text" id="pg-q-text">Memuat soal...</h2>
       </div>
 
       <div class="pg-choices" id="pg-choices-grid">
         <!-- Rendered by JS -->
+      </div>
+
+      <div class="feedback-overlay" id="pg-feedback-overlay">
+        <div class="feedback-content" id="pg-feedback-content"></div>
       </div>
 
       <div class="pg-status" id="pg-status-bar">⏳ Siap menjawab...</div>
@@ -373,17 +561,19 @@
     <div class="result-container">
       <div class="result-trophy" id="result-trophy">🏆</div>
       <h2 class="result-title" id="result-title">TIM A MENANG!</h2>
-      <p class="result-subtitle" id="result-subtitle">Selamat! Tim A berhasil menarik tali ke ujung!</p>
+      <p class="result-subtitle" id="result-subtitle">Selamat! Berhasil menarik tali ke garis kemenangan!</p>
       <div class="final-scores">
         <div class="final-score-card final-a">
           <span class="fs-name" id="final-name-a">TIM A 🔴</span>
           <span class="fs-score" id="final-score-a">0</span>
-          <span class="fs-label">Skor Akhir</span>
+          <span class="fs-label">Skor Poin</span>
+          <span class="fs-speed-tag" id="final-speed-a">⚡ Rata-rata: 0.0s</span>
         </div>
         <div class="final-score-card final-b">
           <span class="fs-name" id="final-name-b">TIM B 🔵</span>
           <span class="fs-score" id="final-score-b">0</span>
-          <span class="fs-label">Skor Akhir</span>
+          <span class="fs-label">Skor Poin</span>
+          <span class="fs-speed-tag" id="final-speed-b">⚡ Rata-rata: 0.0s</span>
         </div>
       </div>
       <div class="result-buttons">
@@ -393,173 +583,10 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════ -->
-  <!--   SCREEN: ADMIN PANEL                     -->
-  <!-- ══════════════════════════════════════════ -->
-  <section id="screen-admin" class="screen">
-    <div class="admin-container">
-      <div class="admin-topbar">
-        <button class="btn-back" onclick="showScreen('home')">← Beranda</button>
-        <div class="admin-badge">👑 Mode Admin Host</div>
-      </div>
-
-      <div class="admin-header">
-        <div class="admin-title-wrap">
-          <span class="admin-icon">⚙️</span>
-          <div>
-            <h1 class="admin-title">Panel Kontrol Host</h1>
-            <p class="admin-subtitle">Kelola Bank Soal, Nama Tim & Riwayat Pertandingan</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- ADMIN TABS -->
-      <div class="admin-tabs">
-        <button class="admin-tab-btn active" id="tab-btn-questions" onclick="switchAdminTab('questions')">
-          📚 Bank Soal (<span id="admin-q-count">20</span>)
-        </button>
-        <button class="admin-tab-btn" id="tab-btn-teams" onclick="switchAdminTab('teams')">
-          🏷️ Nama Tim
-        </button>
-        <button class="admin-tab-btn" id="tab-btn-history" onclick="switchAdminTab('history')">
-          📜 Riwayat (<span id="admin-hist-count">0</span>)
-        </button>
-      </div>
-
-      <!-- TAB CONTENT: QUESTIONS -->
-      <div id="tab-content-questions" class="admin-tab-panel active">
-        <div class="admin-panel-toolbar">
-          <div class="admin-search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="admin-q-search" placeholder="Cari soal pertanyaan..." oninput="filterAdminQuestions()" />
-          </div>
-          <div class="toolbar-actions">
-            <button class="btn-admin-action-btn btn-reset-q" onclick="resetQuestionsToDefault()">
-              🔄 Reset Default (20 Soal)
-            </button>
-            <button class="btn-admin-action-btn btn-add-q" onclick="openAddQuestionModal()">
-              ➕ Tambah Soal
-            </button>
-          </div>
-        </div>
-
-        <div class="admin-questions-list" id="admin-questions-list">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <!-- TAB CONTENT: TEAMS -->
-      <div id="tab-content-teams" class="admin-tab-panel">
-        <div class="admin-card teams-config-card">
-          <h2 class="admin-card-title">🏷️ Kustomisasi Nama Tim</h2>
-          <p class="admin-card-sub">Nama tim ini akan diterapkan saat membuat room baru.</p>
-          
-          <div class="teams-input-grid">
-            <div class="team-config-box team-a-box">
-              <div class="team-config-header">
-                <span class="team-dot dot-a">🔴</span>
-                <h3>Tim A (Sisi Kiri)</h3>
-              </div>
-              <label for="admin-team-a-name">Nama Tim A:</label>
-              <input type="text" id="admin-team-a-name" placeholder="Contoh: Garuda Merah" />
-            </div>
-
-            <div class="team-config-box team-b-box">
-              <div class="team-config-header">
-                <span class="team-dot dot-b">🔵</span>
-                <h3>Tim B (Sisi Kanan)</h3>
-              </div>
-              <label for="admin-team-b-name">Nama Tim B:</label>
-              <input type="text" id="admin-team-b-name" placeholder="Contoh: Banteng Biru" />
-            </div>
-          </div>
-
-          <div class="setting-divider" style="margin: 20px 0; height: 1px; background: rgba(255,255,255,0.08);"></div>
-
-          <h2 class="admin-card-title">🔐 Ganti Password Host</h2>
-          <p class="admin-card-sub">Password untuk akses menu "Buat Room" dan "Panel Admin".</p>
-          <div style="max-width: 320px;">
-            <label for="admin-host-pass-new" style="display:block; font-size: 0.85rem; font-weight:700; color:var(--color-muted); margin-bottom: 6px;">Password Host Baru:</label>
-            <input type="text" id="admin-host-pass-new" placeholder="Masukkan password baru..." style="width:100%; padding:12px; background:var(--color-surface); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:1rem; outline:none;" />
-          </div>
-
-          <div class="team-config-actions" style="margin-top: 10px;">
-            <button class="btn-primary btn-save-team" onclick="saveAdminSettings()">💾 Simpan Semua Pengaturan</button>
-            <span class="save-status-msg" id="team-save-status"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB CONTENT: HISTORY -->
-      <div id="tab-content-history" class="admin-tab-panel">
-        <div class="admin-history-toolbar">
-          <h2 class="admin-card-title">📜 Catatan Riwayat Pertandingan</h2>
-          <button class="btn-danger-outline" onclick="clearMatchHistory()">🗑️ Hapus Semua Riwayat</button>
-        </div>
-        <div class="admin-history-list" id="admin-history-list">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════ -->
-  <!--   MODAL: TAMBAH / EDIT SOAL                -->
-  <!-- ══════════════════════════════════════════ -->
-  <div id="modal-question" class="modal-overlay">
-    <div class="modal-card modal-card-lg">
-      <div class="modal-header">
-        <span class="modal-icon" id="qmodal-icon">✏️</span>
-        <h2 class="modal-title" id="qmodal-title">Tambah Soal Baru</h2>
-        <p class="modal-desc">Isi pertanyaan, 4 opsi jawaban, dan tandai lingkaran radio untuk kunci jawaban BENAR</p>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="qmodal-edit-index" value="-1" />
-        
-        <div class="form-group">
-          <label for="qmodal-question">Teks Soal / Pertanyaan</label>
-          <textarea id="qmodal-question" rows="3" placeholder="Tuliskan pertanyaan di sini..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Pilihan Jawaban (Klik radio pada jawaban yang BENAR):</label>
-          <div class="choices-inputs">
-            <div class="choice-input-row">
-              <input type="radio" name="qmodal-correct" id="qmodal-radio-0" value="0" checked />
-              <span class="choice-tag tag-opt-a">A</span>
-              <input type="text" id="qmodal-choice-0" placeholder="Pilihan A..." />
-            </div>
-            <div class="choice-input-row">
-              <input type="radio" name="qmodal-correct" id="qmodal-radio-1" value="1" />
-              <span class="choice-tag tag-opt-b">B</span>
-              <input type="text" id="qmodal-choice-1" placeholder="Pilihan B..." />
-            </div>
-            <div class="choice-input-row">
-              <input type="radio" name="qmodal-correct" id="qmodal-radio-2" value="2" />
-              <span class="choice-tag tag-opt-c">C</span>
-              <input type="text" id="qmodal-choice-2" placeholder="Pilihan C..." />
-            </div>
-            <div class="choice-input-row">
-              <input type="radio" name="qmodal-correct" id="qmodal-radio-3" value="3" />
-              <span class="choice-tag tag-opt-d">D</span>
-              <input type="text" id="qmodal-choice-3" placeholder="Pilihan D..." />
-            </div>
-          </div>
-        </div>
-
-        <p class="modal-error" id="qmodal-error"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-modal-cancel" onclick="closeQuestionModal()">Batal</button>
-        <button class="btn-primary btn-modal-submit" onclick="saveQuestionModal()">💾 Simpan Soal</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Firebase SDK (compat v10) -->
+  <!-- Firebase SDK (compat v10) & Scripts -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="audio.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

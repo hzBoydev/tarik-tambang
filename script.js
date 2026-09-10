@@ -1,7 +1,7 @@
 /* ============================================================
-   TARIK TAMBANG DIGITAL – script.js
+   TARIK TAMBANG QUIZ – script.js
    Multiplayer Online via Firebase Realtime Database
-   With Host Master Password, Real Rope Rules, & Admin Panel
+   With 5s Reading Phase, Turn Mechanics, Audio & Room Settings
    ============================================================ */
 
 /* ═══════════════════════════════════════════════════════════
@@ -18,19 +18,16 @@ const firebaseConfig = {
   measurementId: "G-1H4YBJH9NM"
 };
 
-// Init Firebase (using compat SDK loaded via <script> tags)
+// Init Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 /* ═══════════════════════════════════════════════════════════
-   🔐 HOST MASTER PASSWORD (Default: HOST123, tersinkron dari Firebase)
+   🔐 HOST MASTER PASSWORD & QUESTION BANK
    ═══════════════════════════════════════════════════════════ */
 let hostMasterPassword = "HOST123";
 let pendingHostAction = null; // 'create-room' | 'admin'
 
-/* ═══════════════════════════════════════════════════════════
-   📚 DEFAULT BANK SOAL PANCASILA (20 Soal)
-   ═══════════════════════════════════════════════════════════ */
 const DEFAULT_QUESTIONS = [
   {
     q: "Pancasila sebagai dasar negara Indonesia pertama kali diusulkan oleh Ir. Soekarno pada sidang BPUPKI tanggal…",
@@ -137,28 +134,30 @@ const DEFAULT_QUESTIONS = [
 let dynamicQuestionBank = [...DEFAULT_QUESTIONS];
 let customTeamNames = { A: "Tim A", B: "Tim B" };
 const LABELS = ['A', 'B', 'C', 'D'];
+const READING_DURATION = 5; // 5 seconds dedicated reading / preview phase
 
 /* ═══════════════════════════════════════════════════════════
    🗃️ SESSION STATE
    ═══════════════════════════════════════════════════════════ */
 let myRole = null;   // 'host' | 'player'
-let myTeam = null;   // 'A' | 'B'  (players only)
+let myTeam = null;   // 'A' | 'B' (players only)
 let roomCode = null;
 let roomRef = null;
-let selectedTeam = 'A';    // team picker state on join screen
-let hasAnswered = false;  // player: answered current question?
+let selectedTeam = 'A';
+let hasAnswered = false;
 let localTimerInterval = null;
-let isProcessing = false;  // host: currently processing an answer?
+let isProcessing = false;
 let answerWatcherRef = null;
-let lastRenderedQ = -1;     // track which question was last rendered (prevent flicker)
+let lastRenderedQ = -1;
+let lastPhase = null;
 let currentScreen = 'home';
 
 /* ═══════════════════════════════════════════════════════════
-   🧭 NAVIGATION
+   🧭 SCREEN NAVIGATION
    ═══════════════════════════════════════════════════════════ */
 const ALL_SCREENS = [
   'home', 'create-room', 'host-lobby', 'join-room',
-  'player-lobby', 'spectator', 'player-game', 'result', 'admin'
+  'player-lobby', 'spectator', 'player-game', 'result'
 ];
 
 function showScreen(name) {
@@ -169,24 +168,34 @@ function showScreen(name) {
   });
 }
 
-function goToCreateRoom() { showScreen('create-room'); }
-function goToJoinRoom() { showScreen('join-room'); }
+function goToCreateRoom() {
+  if (window.Sound) Sound.play('click');
+  showScreen('create-room');
+}
+
+function goToJoinRoom() {
+  if (window.Sound) Sound.play('click');
+  showScreen('join-room');
+}
 
 function goHome() {
+  if (window.Sound) Sound.play('click');
   stopLocalTimer();
   detachListeners();
   myRole = myTeam = roomCode = roomRef = null;
   hasAnswered = isProcessing = false;
   lastRenderedQ = -1;
+  lastPhase = null;
   stopConfetti();
   window.history.replaceState({}, '', window.location.pathname);
   showScreen('home');
 }
 
 /* ═══════════════════════════════════════════════════════════
-   🔐 HOST PASSWORD PROMPT & MODAL LOGIC
+   🔐 HOST PASSWORD MODAL
    ═══════════════════════════════════════════════════════════ */
 function promptHostPassword(action) {
+  if (window.Sound) Sound.play('click');
   pendingHostAction = action;
   const modal = document.getElementById('modal-host-password');
   const input = document.getElementById('input-host-pass');
@@ -221,20 +230,19 @@ function submitHostPassword() {
   const val = (input ? input.value : '').trim().toUpperCase();
 
   if (val === hostMasterPassword.trim().toUpperCase()) {
+    if (window.Sound) Sound.play('start');
     const action = pendingHostAction;
     closeHostPassModal();
     if (action === 'create-room') {
       goToCreateRoom();
-    } else if (action === 'admin') {
-      openAdminPanel();
     }
   } else {
+    if (window.Sound) Sound.play('wrong');
     if (err) err.textContent = '❌ Password Host salah!';
     if (input) input.focus();
   }
 }
 
-// Support Enter key on Host Password modal
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const passModal = document.getElementById('modal-host-password');
@@ -260,20 +268,23 @@ function generateCode() {
    🏠 CREATE ROOM (HOST)
    ═══════════════════════════════════════════════════════════ */
 async function createRoom() {
+  if (window.Sound) Sound.play('click');
   const btn = document.getElementById('btn-create-room');
   btn.disabled = true;
-  btn.textContent = '⏳ Membuat room...';
+  btn.textContent = '⏳ Menyiapkan Room...';
 
   const code = generateCode();
+  const qCountSetting = parseInt(document.getElementById('cr-q-count').value) || 10;
   const winTarget = Math.max(3, Math.min(10, parseInt(document.getElementById('cr-win-target').value) || 5));
-  const timerDuration = Math.max(5, Math.min(30, parseInt(document.getElementById('cr-timer').value) || 15));
+  const totalTimer = Math.max(10, Math.min(30, parseInt(document.getElementById('cr-timer').value) || 15));
 
   const roomData = {
     createdAt: firebase.database.ServerValue.TIMESTAMP,
     status: 'lobby',
     settings: {
+      questionCount: qCountSetting,
       winTarget,
-      timerDuration,
+      timerDuration: totalTimer, // Total duration per question
       teamNames: {
         A: customTeamNames.A || "Tim A",
         B: customTeamNames.B || "Tim B"
@@ -292,7 +303,6 @@ async function createRoom() {
     myRole = 'host';
     roomRef = db.ref(`rooms/${code}`);
 
-    // Populate host lobby UI
     document.getElementById('host-room-code').textContent = code;
     document.getElementById('spec-room-badge').textContent = `Room: ${code}`;
     const base = window.location.origin + window.location.pathname;
@@ -303,14 +313,17 @@ async function createRoom() {
     showScreen('host-lobby');
     listenToRoom(code);
 
+    if (window.Sound) Sound.play('start');
+
   } catch (err) {
-    alert('❌ Gagal membuat room: ' + err.message + '\n\nPastikan koneksi internet / Firebase aktif!');
+    alert('❌ Gagal membuat room: ' + err.message);
     btn.disabled = false;
-    btn.textContent = '🚀 Buat Room';
+    btn.textContent = '🚀 Buat Room Pertandingan';
   }
 }
 
 function copyLink(team) {
+  if (window.Sound) Sound.play('click');
   const input = document.getElementById(`link-team-${team.toLowerCase()}`);
   const btn = document.getElementById(`copy-${team.toLowerCase()}`);
   navigator.clipboard.writeText(input.value).then(() => {
@@ -327,18 +340,20 @@ function copyLink(team) {
    🎮 JOIN ROOM (PLAYER)
    ═══════════════════════════════════════════════════════════ */
 function pickTeam(team) {
+  if (window.Sound) Sound.play('click');
   selectedTeam = team;
   document.getElementById('pick-team-a').classList.toggle('active', team === 'A');
   document.getElementById('pick-team-b').classList.toggle('active', team === 'B');
 }
 
 async function joinRoom() {
+  if (window.Sound) Sound.play('click');
   const code = document.getElementById('join-code').value.trim().toUpperCase();
   const errEl = document.getElementById('join-error');
   errEl.textContent = '';
 
   if (code.length !== 6) {
-    errEl.textContent = '⚠️ Kode room harus 6 karakter.';
+    errEl.textContent = '⚠️ Kode room harus 6 huruf/angka.';
     return;
   }
   await joinRoomByCode(code, selectedTeam);
@@ -352,15 +367,15 @@ async function joinRoomByCode(code, team) {
   try {
     const snap = await db.ref(`rooms/${code}`).get();
     if (!snap.exists()) {
-      errEl.textContent = '⚠️ Room tidak ditemukan. Periksa kode.';
-      if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk'; }
+      errEl.textContent = '⚠️ Room tidak ditemukan. Periksa kembali kodenya.';
+      if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk Pertandingan'; }
       return;
     }
 
     const roomData = snap.val();
     if (roomData.status === 'finished') {
-      errEl.textContent = '⚠️ Room sudah selesai.';
-      if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk'; }
+      errEl.textContent = '⚠️ Pertandingan room ini sudah selesai.';
+      if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk Pertandingan'; }
       return;
     }
 
@@ -373,12 +388,12 @@ async function joinRoomByCode(code, team) {
     roomRef = db.ref(`rooms/${code}`);
     hasAnswered = false;
     lastRenderedQ = -1;
+    lastPhase = null;
 
     const teamDisplayName = team === 'A' 
       ? (roomData.settings?.teamNames?.A || 'TIM A') + ' 🔴'
       : (roomData.settings?.teamNames?.B || 'TIM B') + ' 🔵';
 
-    // Set player lobby UI
     document.getElementById('pl-team-badge').textContent = teamDisplayName;
     document.getElementById('pl-team-badge').className = `pl-team-badge ${team === 'A' ? 'badge-a' : 'badge-b'}`;
     document.getElementById('pl-room-code').textContent = code;
@@ -387,7 +402,8 @@ async function joinRoomByCode(code, team) {
     showScreen('player-lobby');
     listenToRoom(code);
 
-    // If game already started, go straight to player game
+    if (window.Sound) Sound.play('start');
+
     if (roomData.status === 'playing') {
       showScreen('player-game');
       document.getElementById('pg-team-badge').textContent = teamDisplayName;
@@ -396,12 +412,12 @@ async function joinRoomByCode(code, team) {
 
   } catch (err) {
     errEl.textContent = '⚠️ Gagal bergabung: ' + err.message;
-    if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk'; }
+    if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk Pertandingan'; }
   }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   📡 FIREBASE LISTENER (all roles)
+   📡 FIREBASE LISTENER (Host & Player sync)
    ═══════════════════════════════════════════════════════════ */
 function listenToRoom(code) {
   detachListeners();
@@ -420,10 +436,9 @@ function detachListeners() {
 function handleRoomUpdate(data) {
   const { status, teams, game, settings } = data;
 
-  // Always sync lobby status indicators
   syncTeamStatus(teams, settings);
 
-  // HOST: enable start button when both joined
+  // Host Lobby button enable
   if (myRole === 'host' && currentScreen === 'host-lobby') {
     const bothJoined = teams?.A?.joined && teams?.B?.joined;
     const startBtn = document.getElementById('btn-host-start');
@@ -431,12 +446,12 @@ function handleRoomUpdate(data) {
     if (startBtn) startBtn.disabled = !bothJoined;
     if (hintEl) {
       hintEl.textContent = bothJoined
-        ? '✅ Kedua tim siap! Tekan Mulai Game.'
+        ? '✅ Kedua tim siap! Tekan Mulai Game Sekarang.'
         : 'Menunggu kedua tim bergabung...';
     }
   }
 
-  // HANDLE GAME STATUS
+  // Active Game Status
   if (status === 'playing' && game) {
     if (myRole === 'host') {
       if (currentScreen !== 'spectator') {
@@ -468,7 +483,6 @@ function syncTeamStatus(teams, settings) {
   const nameA = settings?.teamNames?.A || 'Tim A';
   const nameB = settings?.teamNames?.B || 'Tim B';
 
-  // Host lobby status
   const hsA = document.getElementById('host-status-a');
   const hsB = document.getElementById('host-status-b');
   if (hsA) {
@@ -485,7 +499,7 @@ function syncTeamStatus(teams, settings) {
     hsB.querySelector('.ps-status').textContent = j ? 'Sudah bergabung!' : 'Menunggu...';
     hsB.classList.toggle('joined', !!j);
   }
-  // Player lobby status
+
   const plA = document.getElementById('pl-status-a');
   const plB = document.getElementById('pl-status-b');
   if (plA) {
@@ -505,29 +519,37 @@ async function hostStartGame() {
   if (!roomCode) return;
   const btn = document.getElementById('btn-host-start');
   btn.disabled = true;
-  btn.textContent = '⏳ Memulai...';
+  btn.textContent = '⏳ Memulai Pertandingan...';
 
   const settSnap = await db.ref(`rooms/${roomCode}/settings`).get();
   const settings = settSnap.val();
 
-  // Shuffle question indices based on dynamicQuestionBank length
-  const qOrder = shuffle([...Array(dynamicQuestionBank.length).keys()]);
+  // Pick question order according to question count limit
+  const fullShuffled = shuffle([...Array(dynamicQuestionBank.length).keys()]);
+  const maxQ = Math.min(settings.questionCount || 10, dynamicQuestionBank.length);
+  const qOrder = fullShuffled.slice(0, maxQ);
+
+  const answerDuration = Math.max(5, settings.timerDuration - READING_DURATION);
 
   const gameData = {
     questionOrder: qOrder,
     currentQ: 0,
+    phase: 'reading', // 'reading' (5s) | 'answering' | 'review'
+    readingTimeLeft: READING_DURATION,
+    answeringTimeLeft: answerDuration,
     ropePos: 0,
     scoreA: 0,
     scoreB: 0,
-    answered: false,
-    answeredBy: null,
-    selectedIdx: null,
+    totalTimeA: 0,
+    answerCountA: 0,
+    totalTimeB: 0,
+    answerCountB: 0,
+    teamAStatus: 'waiting', // 'waiting' | 'wrong' | 'correct'
+    teamBStatus: 'waiting',
     pendingAnswer: null,
     lastResult: null,
-    timeLeft: settings.timerDuration,
-    timeout: false,
-    timerRunning: false,
     winner: null,
+    winReason: null
   };
 
   await db.ref(`rooms/${roomCode}`).update({ status: 'playing', game: gameData });
@@ -535,44 +557,72 @@ async function hostStartGame() {
   showScreen('spectator');
   document.getElementById('spec-room-badge').textContent = `Room: ${roomCode}`;
   setupHostAnswerWatcher();
-  setTimeout(() => startHostTimer(settings.timerDuration), 600);
+
+  if (window.Sound) {
+    Sound.play('start');
+    Sound.startBGM();
+  }
+
+  setTimeout(() => startTwoPhaseHostTimer(settings.timerDuration), 600);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ⏱ HOST: TIMER
+   ⏱ TWO-PHASE HOST TIMER (5s Reading + Answering Phase)
    ═══════════════════════════════════════════════════════════ */
-function startHostTimer(timerDuration) {
+function startTwoPhaseHostTimer(totalDuration) {
   stopLocalTimer();
 
-  db.ref(`rooms/${roomCode}/game/timeLeft`).get().then(snap => {
-    let timeLeft = snap.val() ?? timerDuration;
+  let phase = 'reading';
+  let readingLeft = READING_DURATION;
+  let answeringLeft = Math.max(5, totalDuration - READING_DURATION);
 
-    localTimerInterval = setInterval(async () => {
-      timeLeft--;
-
-      if (timeLeft <= 0) {
-        stopLocalTimer();
-        // Timeout: no one answered
-        await db.ref(`rooms/${roomCode}/game`).transaction(g => {
-          if (!g || g.answered) return undefined; // abort if already answered
-          g.answered = true;
-          g.timeout = true;
-          g.timeLeft = 0;
-          g.timerRunning = false;
-          const qObj = dynamicQuestionBank[g.questionOrder?.[g.currentQ]];
-          g.lastResult = {
-            type: 'timeout',
-            message: '⏰ WAKTU HABIS!\nTidak ada yang menjawab.',
-            correctIdx: qObj?.answer ?? -1
-          };
-          return g;
+  localTimerInterval = setInterval(async () => {
+    if (phase === 'reading') {
+      readingLeft--;
+      if (readingLeft <= 0) {
+        // Transition to answering phase
+        phase = 'answering';
+        if (window.Sound) Sound.play('go');
+        await db.ref(`rooms/${roomCode}/game`).update({
+          phase: 'answering',
+          readingTimeLeft: 0,
+          answeringTimeLeft: answeringLeft
         });
-        setTimeout(() => advanceQuestion(), 2500);
       } else {
-        db.ref(`rooms/${roomCode}/game/timeLeft`).set(timeLeft);
+        db.ref(`rooms/${roomCode}/game/readingTimeLeft`).set(readingLeft);
       }
-    }, 1000);
+    } else if (phase === 'answering') {
+      answeringLeft--;
+      if (answeringLeft <= 0) {
+        // Time out
+        stopLocalTimer();
+        await handleTimeoutExpiration();
+      } else {
+        db.ref(`rooms/${roomCode}/game/answeringTimeLeft`).set(answeringLeft);
+      }
+    }
+  }, 1000);
+}
+
+async function handleTimeoutExpiration() {
+  const snap = await db.ref(`rooms/${roomCode}/game`).get();
+  const game = snap.val();
+  if (!game || game.phase === 'review') return;
+
+  const qObj = dynamicQuestionBank[game.questionOrder?.[game.currentQ]];
+  const lastResult = {
+    type: 'timeout',
+    message: `⏰ WAKTU HABIS!\nJawaban yang benar: ${LABELS[qObj?.answer]}`,
+    correctIdx: qObj?.answer ?? -1
+  };
+
+  await db.ref(`rooms/${roomCode}/game`).update({
+    phase: 'review',
+    answeringTimeLeft: 0,
+    lastResult: lastResult
   });
+
+  setTimeout(() => advanceQuestion(), 2800);
 }
 
 function stopLocalTimer() {
@@ -583,7 +633,7 @@ function stopLocalTimer() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   👁 HOST: WATCH FOR PLAYER ANSWERS
+   👁 HOST: ANSWER WATCHER
    ═══════════════════════════════════════════════════════════ */
 function setupHostAnswerWatcher() {
   if (answerWatcherRef) answerWatcherRef.off();
@@ -592,16 +642,15 @@ function setupHostAnswerWatcher() {
     const answer = snap.val();
     if (answer && !isProcessing) {
       isProcessing = true;
-      stopLocalTimer();
       hostProcessAnswer(answer.team, answer.idx);
     }
   });
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ⚡ REALISTIC TUG-OF-WAR ANSWER PROCESSING
-   - If Correct: team gets +1 & pulls rope to itself
-   - If Wrong: OPPONENT team gets +1 & pulls rope to opponent!
+   ⚡ TURN MECHANICS & WRONG ANSWER PENALTY
+   - Correct: +1 score, pulls rope, ends question!
+   - Wrong: Rope shifts 1 step to opponent (penalty), opponent can still answer!
    ═══════════════════════════════════════════════════════════ */
 async function hostProcessAnswer(team, idx) {
   const snap = await db.ref(`rooms/${roomCode}/game`).get();
@@ -614,9 +663,29 @@ async function hostProcessAnswer(team, idx) {
   const q = dynamicQuestionBank[qIdx];
   const isCorrect = (idx === q.answer);
 
-  let scoreA = game.scoreA;
-  let scoreB = game.scoreB;
-  let ropePos = game.ropePos;
+  let scoreA = game.scoreA ?? 0;
+  let scoreB = game.scoreB ?? 0;
+  let ropePos = game.ropePos ?? 0;
+  let teamAStatus = game.teamAStatus ?? 'waiting';
+  let teamBStatus = game.teamBStatus ?? 'waiting';
+
+  // Calculate answering response time
+  const maxAnswerTime = Math.max(5, settings.timerDuration - READING_DURATION);
+  const currentLeft = game.answeringTimeLeft ?? maxAnswerTime;
+  const timeSpent = Math.max(0.5, maxAnswerTime - currentLeft);
+
+  let totalTimeA = game.totalTimeA ?? 0;
+  let answerCountA = game.answerCountA ?? 0;
+  let totalTimeB = game.totalTimeB ?? 0;
+  let answerCountB = game.answerCountB ?? 0;
+
+  if (team === 'A') {
+    totalTimeA += timeSpent;
+    answerCountA++;
+  } else {
+    totalTimeB += timeSpent;
+    answerCountB++;
+  }
 
   const otherTeam = (team === 'A' ? 'B' : 'A');
   const nameA = settings?.teamNames?.A || 'Tim A';
@@ -625,47 +694,123 @@ async function hostProcessAnswer(team, idx) {
   const opponentTeamName = otherTeam === 'A' ? nameA : nameB;
 
   if (isCorrect) {
-    // Correct answer: points and rope to the team that answered
-    if (team === 'A') { scoreA++; ropePos--; }
-    else { scoreB++; ropePos++; }
+    // CORRECT: Team gets point + pulls rope
+    if (team === 'A') { scoreA++; ropePos--; teamAStatus = 'correct'; }
+    else { scoreB++; ropePos++; teamBStatus = 'correct'; }
+
+    stopLocalTimer();
+
+    const winTarget = settings.winTarget;
+    let winner = null;
+    let winReason = null;
+    if (ropePos <= -winTarget) { winner = 'A'; winReason = 'knockout'; }
+    if (ropePos >= winTarget) { winner = 'B'; winReason = 'knockout'; }
+
+    const lastResult = {
+      type: 'correct',
+      team,
+      idx,
+      correctIdx: q.answer,
+      message: `✅ BENAR!\n${answeredTeamName} mendapat +1 poin & menarik tali!`,
+      winner
+    };
+
+    await db.ref(`rooms/${roomCode}/game`).update({
+      phase: 'review',
+      scoreA,
+      scoreB,
+      totalTimeA,
+      answerCountA,
+      totalTimeB,
+      answerCountB,
+      ropePos,
+      teamAStatus,
+      teamBStatus,
+      lastResult,
+      pendingAnswer: null
+    });
+
+    if (winner) {
+      setTimeout(() => endGameOnFirebase(winner, scoreA, scoreB, settings, winReason, totalTimeA, answerCountA, totalTimeB, answerCountB), 2800);
+    } else {
+      setTimeout(() => advanceQuestion(), 2600);
+    }
+
   } else {
-    // Wrong answer: OPPONENT gets the point & rope moves to opponent!
-    if (team === 'A') { scoreB++; ropePos++; }
-    else { scoreA++; ropePos--; }
-  }
+    // WRONG: Penalty! Rope moves towards opponent
+    if (team === 'A') {
+      ropePos++; // Moves towards B
+      teamAStatus = 'wrong';
+    } else {
+      ropePos--; // Moves towards A
+      teamBStatus = 'wrong';
+    }
 
-  const winTarget = settings.winTarget;
-  let winner = null;
-  if (ropePos <= -winTarget) winner = 'A';
-  if (ropePos >= winTarget) winner = 'B';
+    const winTarget = settings.winTarget;
+    let winner = null;
+    let winReason = null;
+    if (ropePos <= -winTarget) { winner = 'A'; winReason = 'knockout'; }
+    if (ropePos >= winTarget) { winner = 'B'; winReason = 'knockout'; }
 
-  const lastResult = {
-    type: isCorrect ? 'correct' : 'wrong',
-    team,
-    otherTeam,
-    idx,
-    correctIdx: q.answer,
-    message: isCorrect
-      ? `✅ BENAR!\n${answeredTeamName} mendapat +1 poin & menarik tali!`
-      : `❌ SALAH!\n+1 Poin & tarikan tali diberikan ke ${opponentTeamName}!\nJawaban benar: ${LABELS[q.answer]}`,
-    winner,
-  };
+    const bothWrong = (teamAStatus === 'wrong' && teamBStatus === 'wrong');
 
-  await db.ref(`rooms/${roomCode}`).update({
-    'game/answered': true,
-    'game/answeredBy': team,
-    'game/selectedIdx': idx,
-    'game/scoreA': scoreA,
-    'game/scoreB': scoreB,
-    'game/ropePos': ropePos,
-    'game/lastResult': lastResult,
-    'game/timerRunning': false,
-  });
+    if (bothWrong || winner) {
+      stopLocalTimer();
 
-  if (winner) {
-    setTimeout(() => endGameOnFirebase(winner, scoreA, scoreB, settings), 2800);
-  } else {
-    setTimeout(() => advanceQuestion(), 2600);
+      const lastResult = {
+        type: 'wrong',
+        team,
+        idx,
+        correctIdx: q.answer,
+        message: winner 
+          ? `❌ Jawaban salah!\nTali tertarik ke garis batas!`
+          : `❌ KEDUA TIM SALAH!\nTali bergeser & soal lanjut.\nKunci: ${LABELS[q.answer]}`,
+        winner
+      };
+
+      await db.ref(`rooms/${roomCode}/game`).update({
+        phase: 'review',
+        totalTimeA,
+        answerCountA,
+        totalTimeB,
+        answerCountB,
+        ropePos,
+        teamAStatus,
+        teamBStatus,
+        lastResult,
+        pendingAnswer: null
+      });
+
+      if (winner) {
+        setTimeout(() => endGameOnFirebase(winner, scoreA, scoreB, settings, winReason, totalTimeA, answerCountA, totalTimeB, answerCountB), 2800);
+      } else {
+        setTimeout(() => advanceQuestion(), 2800);
+      }
+
+    } else {
+      // One team wrong, opponent STILL HAS A CHANCE!
+      const lastResult = {
+        type: 'turn_chance',
+        team,
+        idx,
+        correctIdx: q.answer,
+        message: `❌ ${answeredTeamName} SALAH!\nTali bergeser ke ${opponentTeamName}.\nKesempatan untuk ${opponentTeamName} menjawab!`
+      };
+
+      await db.ref(`rooms/${roomCode}/game`).update({
+        totalTimeA,
+        answerCountA,
+        totalTimeB,
+        answerCountB,
+        ropePos,
+        teamAStatus,
+        teamBStatus,
+        lastResult,
+        pendingAnswer: null
+      });
+
+      isProcessing = false; // Allow second team to answer
+    }
   }
 }
 
@@ -679,41 +824,73 @@ async function advanceQuestion() {
   const nextQ = game.currentQ + 1;
 
   if (nextQ >= (game.questionOrder?.length ?? 0)) {
-    // All questions done
-    const winner = game.scoreA > game.scoreB ? 'A'
-      : game.scoreB > game.scoreA ? 'B'
-        : 'draw';
-    endGameOnFirebase(winner, game.scoreA, game.scoreB, settings);
+    // All questions finished! Decide winner (Points OR Speed Tiebreaker)
+    let winner = null;
+    let winReason = null;
+    const scoreA = game.scoreA ?? 0;
+    const scoreB = game.scoreB ?? 0;
+
+    const avgA = (game.answerCountA > 0) ? (game.totalTimeA / game.answerCountA) : 999;
+    const avgB = (game.answerCountB > 0) ? (game.totalTimeB / game.answerCountB) : 999;
+
+    if (scoreA > scoreB) {
+      winner = 'A';
+      winReason = 'points';
+    } else if (scoreB > scoreA) {
+      winner = 'B';
+      winReason = 'points';
+    } else {
+      // SCORE IS TIED! SPEED TIEBREAKER:
+      if (avgA < avgB) {
+        winner = 'A';
+        winReason = 'speed_tiebreaker';
+      } else if (avgB < avgA) {
+        winner = 'B';
+        winReason = 'speed_tiebreaker';
+      } else {
+        winner = 'draw';
+        winReason = 'draw';
+      }
+    }
+
+    endGameOnFirebase(winner, scoreA, scoreB, settings, winReason, game.totalTimeA, game.answerCountA, game.totalTimeB, game.answerCountB);
     return;
   }
 
+  const answerDuration = Math.max(5, settings.timerDuration - READING_DURATION);
+
   await db.ref(`rooms/${roomCode}/game`).update({
     currentQ: nextQ,
-    answered: false,
-    answeredBy: null,
-    selectedIdx: null,
+    phase: 'reading',
+    readingTimeLeft: READING_DURATION,
+    answeringTimeLeft: answerDuration,
+    teamAStatus: 'waiting',
+    teamBStatus: 'waiting',
     pendingAnswer: null,
-    lastResult: null,
-    timeout: false,
-    timerRunning: false,
-    timeLeft: settings.timerDuration,
+    lastResult: null
   });
 
   isProcessing = false;
-  startHostTimer(settings.timerDuration);
+  hasAnswered = false;
+  startTwoPhaseHostTimer(settings.timerDuration);
 }
 
-async function endGameOnFirebase(winner, scoreA, scoreB, settings) {
+async function endGameOnFirebase(winner, scoreA, scoreB, settings, winReason = 'points', totalTimeA = 0, countA = 0, totalTimeB = 0, countB = 0) {
   stopLocalTimer();
   
+  const avgA = countA > 0 ? (totalTimeA / countA) : 0;
+  const avgB = countB > 0 ? (totalTimeB / countB) : 0;
+
   await db.ref(`rooms/${roomCode}`).update({
     status: 'finished',
     'game/winner': winner,
+    'game/winReason': winReason,
     'game/scoreA': scoreA,
     'game/scoreB': scoreB,
+    'game/avgSpeedA': avgA,
+    'game/avgSpeedB': avgB,
   });
 
-  // Log to history in Firebase
   try {
     const nameA = settings?.teamNames?.A || 'Tim A';
     const nameB = settings?.teamNames?.B || 'Tim B';
@@ -724,7 +901,10 @@ async function endGameOnFirebase(winner, scoreA, scoreB, settings) {
       teamB: nameB,
       scoreA: scoreA,
       scoreB: scoreB,
-      winner: winner
+      winner: winner,
+      winReason: winReason,
+      avgSpeedA: avgA.toFixed(1),
+      avgSpeedB: avgB.toFixed(1)
     });
   } catch (err) {
     console.error('History log error:', err);
@@ -732,73 +912,97 @@ async function endGameOnFirebase(winner, scoreA, scoreB, settings) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   🖥 SPECTATOR UI (Host view)
+   🖥 SPECTATOR UI (Host Arena)
    ═══════════════════════════════════════════════════════════ */
 function updateSpectatorUI(game, settings) {
   const nameA = settings?.teamNames?.A || 'Tim A';
   const nameB = settings?.teamNames?.B || 'Tim B';
 
-  // Team names
   document.getElementById('spec-team-name-a').textContent = `${nameA.toUpperCase()} 🔴`;
   document.getElementById('spec-team-name-b').textContent = `${nameB.toUpperCase()} 🔵`;
   document.getElementById('spec-rope-label-a').textContent = `← ${nameA}`;
   document.getElementById('spec-rope-label-b').textContent = `${nameB} →`;
+  document.getElementById('spec-char-label-a').textContent = nameA;
+  document.getElementById('spec-char-label-b').textContent = nameB;
 
-  // Scores
   document.getElementById('spec-score-a').textContent = game.scoreA ?? 0;
   document.getElementById('spec-score-b').textContent = game.scoreB ?? 0;
 
-  // Question counter
-  const total = game.questionOrder?.length ?? dynamicQuestionBank.length;
-  document.getElementById('spec-counter').textContent = `Soal ${(game.currentQ ?? 0) + 1} / ${total}`;
+  const totalQ = game.questionOrder?.length ?? 10;
+  document.getElementById('spec-counter').textContent = `Soal ${(game.currentQ ?? 0) + 1} / ${totalQ}`;
   document.getElementById('spec-q-number').textContent = `Soal ${(game.currentQ ?? 0) + 1}`;
 
-  // Timer
-  const tLeft = game.timeLeft ?? settings.timerDuration;
-  const maxT = settings.timerDuration;
-  document.getElementById('spec-timer-text').textContent = tLeft;
-  const arc = document.getElementById('spec-timer-arc');
-  arc.style.strokeDashoffset = 163.36 * (1 - tLeft / maxT);
-  arc.classList.toggle('urgent', tLeft <= 5);
+  // Phase & Timer Ring
+  const phaseBadge = document.getElementById('spec-phase-badge');
+  const timerArc = document.getElementById('spec-timer-arc');
+  const timerText = document.getElementById('spec-timer-text');
 
-  // Question text
+  if (game.phase === 'reading') {
+    const rLeft = game.readingTimeLeft ?? READING_DURATION;
+    phaseBadge.textContent = `📖 WAKTU MEMBACA SOAL (${rLeft}s)`;
+    phaseBadge.className = 'phase-indicator-badge reading';
+    timerText.textContent = rLeft;
+    timerArc.className = 'timer-arc reading-phase';
+    timerArc.style.strokeDashoffset = 163.36 * (1 - rLeft / READING_DURATION);
+  } else {
+    const aLeft = game.answeringTimeLeft ?? (settings.timerDuration - READING_DURATION);
+    const maxA = Math.max(5, settings.timerDuration - READING_DURATION);
+    phaseBadge.textContent = `⚡ WAKTU MENJAWAB! (${aLeft}s)`;
+    phaseBadge.className = 'phase-indicator-badge answering';
+    timerText.textContent = aLeft;
+    timerArc.className = `timer-arc ${aLeft <= 4 ? 'urgent' : ''}`;
+    timerArc.style.strokeDashoffset = 163.36 * (1 - aLeft / maxA);
+  }
+
+  // Question & Choices
   if (game.questionOrder) {
     const qIdx = game.questionOrder[game.currentQ];
     const q = dynamicQuestionBank[qIdx];
     if (q) {
       document.getElementById('spec-q-text').textContent = q.q;
 
-      // Render choices (only re-render when question changes)
-      if (lastRenderedQ !== game.currentQ) {
+      if (lastRenderedQ !== game.currentQ || lastPhase !== game.phase) {
         lastRenderedQ = game.currentQ;
-        renderSpecChoices(q.choices);
+        lastPhase = game.phase;
+        renderSpecChoices(q.choices, game.phase);
       }
 
-      // Apply answer highlighting when answered
-      if (game.answered && game.lastResult) {
-        applySpecChoiceResult(game.selectedIdx, q.answer, game.answeredBy, game.lastResult.type);
+      if (game.lastResult) {
+        applySpecChoiceResult(game.lastResult, q.answer);
       }
     }
   }
 
-  // Rope
+  // Rope Knot & Pull Animations
   updateRopeKnot('spec-rope-knot', game.ropePos ?? 0, settings.winTarget);
 
-  // Feedback overlay
-  if (game.lastResult) {
+  // Status Bar
+  updateSpecStatusBar(game, settings);
+
+  // Feedback Overlay
+  if (game.lastResult && game.phase === 'review') {
     showSpecFeedback(game.lastResult);
   } else {
     hideSpecFeedback();
   }
-
-  // Status bar
-  updateSpecStatusBar(game, settings);
 }
 
-function renderSpecChoices(choices) {
+function renderSpecChoices(choices, phase) {
   const grid = document.getElementById('spec-choices-grid');
   if (!grid) return;
   grid.innerHTML = '';
+
+  if (phase === 'reading') {
+    grid.innerHTML = `
+      <div class="choices-locked-overlay">
+        <span class="lock-icon">🔒</span>
+        <div class="lock-title">Pilihan Jawaban Segera Terbuka...</div>
+        <div class="lock-desc">Gunakan 5 detik ini untuk membaca soal dengan seksama!</div>
+      </div>
+    `;
+    return;
+  }
+
   choices.forEach((text, i) => {
     const div = document.createElement('div');
     div.className = 'choice-btn spec-choice';
@@ -808,14 +1012,12 @@ function renderSpecChoices(choices) {
   });
 }
 
-function applySpecChoiceResult(selectedIdx, correctIdx, team, type) {
+function applySpecChoiceResult(lastResult, correctIdx) {
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`spec-choice-${i}`);
     if (!btn) continue;
-    btn.className = 'choice-btn spec-choice';
     if (i === correctIdx) btn.classList.add('correct');
-    if (i === selectedIdx && i !== correctIdx) btn.classList.add('wrong', `answered-${team?.toLowerCase()}`);
-    if (i === selectedIdx && i === correctIdx) btn.classList.add(`answered-${team?.toLowerCase()}`);
+    if (i === lastResult.idx && i !== correctIdx) btn.classList.add('wrong');
   }
 }
 
@@ -824,23 +1026,29 @@ function updateSpecStatusBar(game, settings) {
   if (!bar) return;
   const nameA = settings?.teamNames?.A || 'Tim A';
   const nameB = settings?.teamNames?.B || 'Tim B';
-  const ansTeamName = game.answeredBy === 'A' ? nameA : nameB;
-  const oppTeamName = game.answeredBy === 'A' ? nameB : nameA;
 
-  if (!game.answered && !game.timeout) {
-    bar.textContent = '⏳ Menunggu jawaban dari tim pemain...';
+  if (game.phase === 'reading') {
+    bar.textContent = '📖 Fase membaca soal... Pilihan jawaban akan terbuka sebentar lagi.';
     bar.className = 'status-bar';
-  } else if (game.lastResult?.type === 'timeout') {
-    bar.textContent = '⏰ Waktu habis! Tidak ada yang menjawab.';
-    bar.className = 'status-bar';
+  } else if (game.lastResult?.type === 'turn_chance') {
+    const wrongTeam = game.lastResult.team === 'A' ? nameA : nameB;
+    const chanceTeam = game.lastResult.team === 'A' ? nameB : nameA;
+    bar.textContent = `⚡ ${wrongTeam} salah! Tarikan tali bergeser. Kesempatan untuk ${chanceTeam} menjawab!`;
+    bar.className = 'status-bar status-turn-chance';
   } else if (game.lastResult?.type === 'correct') {
-    bar.textContent = `✅ ${ansTeamName.toUpperCase()} BENAR! (+1 poin & menarik tali)`;
-    bar.className = `status-bar ${game.answeredBy === 'A' ? 'status-a' : 'status-b'}`;
+    const winTeam = game.lastResult.team === 'A' ? nameA : nameB;
+    bar.textContent = `✅ ${winTeam} BENAR! (+1 Poin & menarik tali)`;
+    bar.className = `status-bar ${game.lastResult.team === 'A' ? 'status-a' : 'status-b'}`;
+  } else if (game.lastResult?.type === 'timeout') {
+    bar.textContent = '⏰ Waktu habis! Tidak ada tim yang berhasil menjawab.';
+    bar.className = 'status-bar';
   } else {
-    bar.textContent = `❌ ${ansTeamName.toUpperCase()} SALAH! (+1 poin & tarikan tali untuk ${oppTeamName})`;
-    bar.className = 'status-bar status-neutral';
+    bar.textContent = '⚡ Waktu menjawab! Tim mana yang paling cepat & tepat?';
+    bar.className = 'status-bar';
   }
 }
+
+let lastProcessedResultKey = null;
 
 function showSpecFeedback(result) {
   const overlay = document.getElementById('spec-feedback-overlay');
@@ -855,6 +1063,81 @@ function hideSpecFeedback() {
   document.getElementById('spec-feedback-overlay')?.classList.remove('show');
 }
 
+function showPlayerFeedback(game, settings, q) {
+  const overlay = document.getElementById('pg-feedback-overlay');
+  const content = document.getElementById('pg-feedback-content');
+  if (!overlay || !content) return;
+
+  const result = game.lastResult;
+  if (!result) {
+    hidePlayerFeedback();
+    return;
+  }
+
+  const resultKey = `${game.currentQ}_${result.type}_${result.team}_${result.idx}`;
+  const isNewResult = (lastProcessedResultKey !== resultKey);
+  lastProcessedResultKey = resultKey;
+
+  const myAnswered = (result.team === myTeam);
+  const nameA = settings?.teamNames?.A || 'Tim A';
+  const nameB = settings?.teamNames?.B || 'Tim B';
+  const myTeamName = myTeam === 'A' ? nameA : nameB;
+  const oppTeamName = myTeam === 'A' ? nameB : nameA;
+
+  let title = '';
+  let sub = '';
+  let typeClass = 'feedback-wrong';
+
+  if (result.type === 'correct') {
+    if (myAnswered) {
+      typeClass = 'feedback-correct';
+      title = '🎉 JAWABAN BENAR!';
+      sub = `Hebat! ${myTeamName} mendapat +1 poin & menarik tali!`;
+      if (isNewResult && window.Sound) Sound.play('correct');
+    } else {
+      typeClass = 'feedback-wrong';
+      title = '⚡ LAWAN BENAR!';
+      sub = `${oppTeamName} berhasil menjawab dengan benar & menarik tali.`;
+      if (isNewResult && window.Sound) Sound.play('wrong');
+    }
+  } else if (result.type === 'turn_chance') {
+    if (myAnswered) {
+      typeClass = 'feedback-wrong';
+      title = '❌ JAWABAN KAMU SALAH!';
+      sub = `Tali bergeser ke ${oppTeamName}.<br><span style="color:#ffd32a; font-size:1.1em; display:inline-block; margin-top:8px;">⏳ Tunggu lawan menjawab...</span>`;
+      if (isNewResult && window.Sound) Sound.play('wrong');
+    } else {
+      typeClass = 'feedback-correct';
+      title = '⚡ LAWAN SALAH!';
+      sub = `Tali tertarik ke tim kamu.<br><span style="color:#10b981; font-size:1.1em; display:inline-block; margin-top:8px;">🎯 Giliran kamu menjawab sekarang!</span>`;
+      if (isNewResult && window.Sound) Sound.play('go');
+      setTimeout(() => hidePlayerFeedback(), 2000);
+    }
+  } else if (result.type === 'wrong') {
+    typeClass = 'feedback-wrong';
+    if (myAnswered) {
+      title = '❌ JAWABAN SALAH!';
+      sub = `Jawaban yang benar: <strong>${LABELS[q?.answer]}</strong>`;
+    } else {
+      title = '❌ KEDUA TIM SALAH!';
+      sub = `Jawaban yang benar: <strong>${LABELS[q?.answer]}</strong>`;
+    }
+    if (isNewResult && window.Sound) Sound.play('wrong');
+  } else if (result.type === 'timeout') {
+    typeClass = 'feedback-wrong';
+    title = '⏰ WAKTU HABIS!';
+    sub = `Jawaban yang benar: <strong>${LABELS[q?.answer]}</strong>`;
+  }
+
+  content.className = `feedback-content ${typeClass}`;
+  content.innerHTML = `<div style="font-size:1.25em; margin-bottom:8px;">${title}</div><div style="font-size:0.95em;">${sub}</div>`;
+  overlay.classList.add('show');
+}
+
+function hidePlayerFeedback() {
+  document.getElementById('pg-feedback-overlay')?.classList.remove('show');
+}
+
 /* ═══════════════════════════════════════════════════════════
    📱 PLAYER GAME UI
    ═══════════════════════════════════════════════════════════ */
@@ -866,87 +1149,101 @@ function updatePlayerUI(game, settings) {
   if (!q) return;
 
   // Counter
-  document.getElementById('pg-counter').textContent = `Soal ${(game.currentQ ?? 0) + 1}/${game.questionOrder.length}`;
+  const totalQ = game.questionOrder.length;
+  document.getElementById('pg-counter').textContent = `Soal ${(game.currentQ ?? 0) + 1}/${totalQ}`;
 
-  // Timer
-  const tLeft = game.timeLeft ?? settings.timerDuration;
-  const maxT = settings.timerDuration;
-  document.getElementById('pg-timer-text').textContent = tLeft;
-  const pgArc = document.getElementById('pg-timer-arc');
-  pgArc.style.strokeDashoffset = 163.36 * (1 - tLeft / maxT);
-  pgArc.classList.toggle('urgent', tLeft <= 5);
+  // Phase & Timer Ring
+  const phaseBadge = document.getElementById('pg-phase-badge');
+  const timerArc = document.getElementById('pg-timer-arc');
+  const timerText = document.getElementById('pg-timer-text');
 
-  // New question: reset + re-render choices
-  if (lastRenderedQ !== game.currentQ) {
-    lastRenderedQ = game.currentQ;
-    hasAnswered = false;
-    document.getElementById('pg-q-text').textContent = q.q;
-    renderPlayerChoices(q.choices, false, -1, -1, null);
-    document.getElementById('pg-status-bar').textContent = '⏳ Siap menjawab...';
-    document.getElementById('pg-status-bar').className = 'pg-status';
+  if (game.phase === 'reading') {
+    hidePlayerFeedback();
+    const rLeft = game.readingTimeLeft ?? READING_DURATION;
+    phaseBadge.textContent = `📖 BACA SOAL (${rLeft}s)`;
+    phaseBadge.className = 'phase-indicator-badge reading';
+    timerText.textContent = rLeft;
+    timerArc.className = 'timer-arc reading-phase';
+    timerArc.style.strokeDashoffset = 163.36 * (1 - rLeft / READING_DURATION);
+  } else {
+    const aLeft = game.answeringTimeLeft ?? (settings.timerDuration - READING_DURATION);
+    const maxA = Math.max(5, settings.timerDuration - READING_DURATION);
+    phaseBadge.textContent = `⚡ WAKTU JAWAB! (${aLeft}s)`;
+    phaseBadge.className = 'phase-indicator-badge answering';
+    timerText.textContent = aLeft;
+    timerArc.className = `timer-arc ${aLeft <= 4 ? 'urgent' : ''}`;
+    timerArc.style.strokeDashoffset = 163.36 * (1 - aLeft / maxA);
   }
 
-  // Show result when answered
-  if (game.answered && game.lastResult) {
-    applyPlayerChoiceResult(game.selectedIdx, q.answer, game.answeredBy, game.lastResult.type);
+  // Question & Choices Re-render
+  if (lastRenderedQ !== game.currentQ || lastPhase !== game.phase) {
+    lastRenderedQ = game.currentQ;
+    lastPhase = game.phase;
+    hasAnswered = false;
+    hidePlayerFeedback();
+    document.getElementById('pg-q-text').textContent = q.q;
+    renderPlayerChoices(q.choices, game.phase, game);
+  }
 
+  // Player Feedback Popups
+  if (game.lastResult) {
+    showPlayerFeedback(game, settings, q);
+  } else if (game.phase === 'reading' || game.phase === 'answering') {
+    if (!game.lastResult) hidePlayerFeedback();
+  }
+
+  // Lock team choices if this team already answered wrong
+  const myStatus = myTeam === 'A' ? game.teamAStatus : game.teamBStatus;
+  if (myStatus === 'wrong' && game.phase === 'answering') {
+    document.querySelectorAll('.pg-choice-btn').forEach(b => b.disabled = true);
     const bar = document.getElementById('pg-status-bar');
-    const type = game.lastResult.type;
-    const oppTeam = myTeam === 'A' ? 'B' : 'A';
-    const nameOpp = settings?.teamNames?.[oppTeam] || `Tim ${oppTeam}`;
-
-    if (type === 'timeout') {
-      bar.textContent = `⏰ Waktu habis! Jawaban benar: ${LABELS[q.answer]}`;
-      bar.className = 'pg-status';
-    } else if (game.answeredBy === myTeam) {
-      if (type === 'correct') {
-        bar.textContent = '✅ Jawaban BENAR! +1 poin untuk tim kamu & menarik tali!';
-        bar.className = 'pg-status pg-correct';
-      } else {
-        bar.textContent = `❌ Jawaban SALAH! +1 poin & tali tertarik ke ${nameOpp}! (Kunci: ${LABELS[q.answer]})`;
-        bar.className = 'pg-status pg-wrong';
-      }
-    } else {
-      // Opponent answered
-      if (type === 'correct') {
-        bar.textContent = `⚡ ${nameOpp} menjawab BENAR! (+1 poin untuk lawan)`;
-        bar.className = 'pg-status pg-wrong';
-      } else {
-        bar.textContent = `🎉 ${nameOpp} menjawab SALAH! Poin +1 & tarikan tali diberikan ke tim kamu!`;
-        bar.className = 'pg-status pg-correct';
-      }
-    }
+    bar.textContent = '❌ Jawaban kamu salah! Menunggu tim lawan menjawab...';
+    bar.className = 'pg-status pg-wrong';
+  } else if (game.lastResult?.type === 'turn_chance' && myStatus === 'waiting') {
+    const bar = document.getElementById('pg-status-bar');
+    bar.textContent = '⚡ Tim lawan salah! Sekarang giliran kamu menjawab!';
+    bar.className = 'pg-status pg-correct';
   }
 }
 
-function renderPlayerChoices(choices, disabled, selectedIdx, correctIdx, type) {
+function renderPlayerChoices(choices, phase, game) {
   const grid = document.getElementById('pg-choices-grid');
   if (!grid) return;
   grid.innerHTML = '';
+
+  if (phase === 'reading') {
+    grid.innerHTML = `
+      <div class="choices-locked-overlay">
+        <span class="lock-icon">🔒</span>
+        <div class="lock-title">Persiapan Membaca Soal</div>
+        <div class="lock-desc">Pilihan jawaban akan terbuka otomatis setelah 5 detik!</div>
+      </div>
+    `;
+    document.getElementById('pg-status-bar').textContent = '📖 Baca soal dengan seksama...';
+    document.getElementById('pg-status-bar').className = 'pg-status';
+    return;
+  }
+
+  const myStatus = myTeam === 'A' ? game.teamAStatus : game.teamBStatus;
+  const isLocked = myStatus === 'wrong';
+
   choices.forEach((text, i) => {
     const btn = document.createElement('button');
     btn.className = 'pg-choice-btn';
     btn.id = `pg-choice-${i}`;
     btn.dataset.idx = i;
     btn.innerHTML = `<span class="pg-choice-label">${LABELS[i]}</span><span class="pg-choice-text">${text}</span>`;
-    if (disabled) {
+    
+    if (isLocked) {
       btn.disabled = true;
     } else {
       btn.addEventListener('click', () => submitAnswer(i));
     }
     grid.appendChild(btn);
   });
-}
 
-function applyPlayerChoiceResult(selectedIdx, correctIdx, answeredBy, type) {
-  for (let i = 0; i < 4; i++) {
-    const btn = document.getElementById(`pg-choice-${i}`);
-    if (!btn) continue;
-    btn.disabled = true;
-    btn.className = 'pg-choice-btn';
-    if (i === correctIdx) btn.classList.add('correct');
-    if (i === selectedIdx && i !== correctIdx) btn.classList.add('wrong');
-  }
+  document.getElementById('pg-status-bar').textContent = isLocked ? '❌ Terkunci' : '⚡ Pilih jawaban sekarang!';
+  document.getElementById('pg-status-bar').className = 'pg-status';
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -954,20 +1251,16 @@ function applyPlayerChoiceResult(selectedIdx, correctIdx, answeredBy, type) {
    ═══════════════════════════════════════════════════════════ */
 function submitAnswer(idx) {
   if (hasAnswered || !roomCode || myRole !== 'player') return;
+  if (window.Sound) Sound.play('click');
   hasAnswered = true;
 
   document.querySelectorAll('.pg-choice-btn').forEach(b => b.disabled = true);
   const selBtn = document.getElementById(`pg-choice-${idx}`);
   if (selBtn) selBtn.classList.add('selected-pending');
 
-  db.ref(`rooms/${roomCode}/game`).transaction(game => {
-    if (!game || game.answered || game.pendingAnswer) return undefined;
-    game.answered = true;
-    game.answeredBy = myTeam;
-    game.selectedIdx = idx;
-    game.pendingAnswer = { team: myTeam, idx };
-    game.timerRunning = false;
-    return game;
+  db.ref(`rooms/${roomCode}/game/pendingAnswer`).set({
+    team: myTeam,
+    idx: idx
   }).catch(err => {
     console.error('Submit answer error:', err);
     hasAnswered = false;
@@ -983,8 +1276,16 @@ function showResultScreen(game, settings) {
   const scoreA = game.scoreA ?? 0;
   const scoreB = game.scoreB ?? 0;
   const winner = game.winner;
+  const winReason = game.winReason;
   const nameA = settings?.teamNames?.A || 'Tim A';
   const nameB = settings?.teamNames?.B || 'Tim B';
+
+  const avgSpeedA = (game.avgSpeedA !== undefined) 
+    ? Number(game.avgSpeedA)
+    : (game.answerCountA > 0 ? (game.totalTimeA / game.answerCountA) : 0);
+  const avgSpeedB = (game.avgSpeedB !== undefined)
+    ? Number(game.avgSpeedB)
+    : (game.answerCountB > 0 ? (game.totalTimeB / game.answerCountB) : 0);
 
   const trophy = document.getElementById('result-trophy');
   const title = document.getElementById('result-title');
@@ -995,39 +1296,38 @@ function showResultScreen(game, settings) {
   document.getElementById('final-score-a').textContent = scoreA;
   document.getElementById('final-score-b').textContent = scoreB;
 
-  title.style.background = '';
-  title.style.webkitBackgroundClip = '';
-  title.style.webkitTextFillColor = '';
+  const speedAEl = document.getElementById('final-speed-a');
+  const speedBEl = document.getElementById('final-speed-b');
+  if (speedAEl) speedAEl.textContent = `⚡ Rata-rata: ${avgSpeedA > 0 ? avgSpeedA.toFixed(1) + 's' : '-'}`;
+  if (speedBEl) speedBEl.textContent = `⚡ Rata-rata: ${avgSpeedB > 0 ? avgSpeedB.toFixed(1) + 's' : '-'}`;
 
-  if (winner === 'A') {
+  if (winReason === 'speed_tiebreaker') {
+    trophy.textContent = '⚡';
+    if (winner === 'A') {
+      title.textContent = `🔴 ${nameA.toUpperCase()} MENANG TIEBREAKER!`;
+      sub.textContent = `Skor imbang ${scoreA} - ${scoreB}! ${nameA} menang karena lebih cepat menjawab (${avgSpeedA.toFixed(1)}s vs ${avgSpeedB.toFixed(1)}s)!`;
+    } else {
+      title.textContent = `🔵 ${nameB.toUpperCase()} MENANG TIEBREAKER!`;
+      sub.textContent = `Skor imbang ${scoreA} - ${scoreB}! ${nameB} menang karena lebih cepat menjawab (${avgSpeedB.toFixed(1)}s vs ${avgSpeedA.toFixed(1)}s)!`;
+    }
+    if (window.Sound) Sound.play('victory');
+    launchConfetti();
+  } else if (winner === 'A') {
     trophy.textContent = '🏆';
     title.textContent = `🔴 ${nameA.toUpperCase()} MENANG!`;
-    sub.textContent = `Selamat! ${nameA} berhasil menarik tali ke garis kemenangan!`;
-    title.style.background = 'linear-gradient(135deg,#ff4757,#ff6b81)';
-    title.style.webkitBackgroundClip = 'text';
-    title.style.webkitTextFillColor = 'transparent';
+    sub.textContent = `Selamat! ${nameA} berhasil memenangkan pertandingan!`;
+    if (window.Sound) Sound.play('victory');
     launchConfetti();
   } else if (winner === 'B') {
     trophy.textContent = '🏆';
     title.textContent = `🔵 ${nameB.toUpperCase()} MENANG!`;
-    sub.textContent = `Selamat! ${nameB} berhasil menarik tali ke garis kemenangan!`;
-    title.style.background = 'linear-gradient(135deg,#2f9ceb,#74c0fc)';
-    title.style.webkitBackgroundClip = 'text';
-    title.style.webkitTextFillColor = 'transparent';
-    launchConfetti();
-  } else if (scoreA > scoreB) {
-    trophy.textContent = '🏆';
-    title.textContent = `🔴 ${nameA.toUpperCase()} MENANG!`;
-    sub.textContent = `Semua soal selesai. ${nameA} unggul dengan poin lebih banyak!`;
-    launchConfetti();
-  } else if (scoreB > scoreA) {
-    trophy.textContent = `🔵 ${nameB.toUpperCase()} MENANG!`;
-    sub.textContent = `Semua soal selesai. ${nameB} unggul dengan poin lebih banyak!`;
+    sub.textContent = `Selamat! ${nameB} berhasil memenangkan pertandingan!`;
+    if (window.Sound) Sound.play('victory');
     launchConfetti();
   } else {
     trophy.textContent = '🤝';
     title.textContent = '🤝 PERTANDINGAN SERI!';
-    sub.textContent = 'Kedua tim memiliki skor yang sama kuat!';
+    sub.textContent = `Kedua tim memiliki skor dan kecepatan yang sama kuat (${scoreA} - ${scoreB})!`;
   }
 
   document.getElementById('btn-play-again').style.display = myRole === 'host' ? '' : 'none';
@@ -1036,9 +1336,11 @@ function showResultScreen(game, settings) {
 
 async function playAgain() {
   if (myRole !== 'host') return;
+  if (window.Sound) Sound.play('click');
   isProcessing = false;
   hasAnswered = false;
   lastRenderedQ = -1;
+  lastPhase = null;
   stopConfetti();
   stopLocalTimer();
 
@@ -1052,12 +1354,12 @@ async function playAgain() {
   showScreen('host-lobby');
   document.getElementById('host-room-code').textContent = roomCode;
   document.getElementById('btn-host-start').disabled = false;
-  document.getElementById('start-hint-text').textContent = '✅ Kedua tim siap! Tekan Mulai Game.';
+  document.getElementById('start-hint-text').textContent = '✅ Kedua tim siap! Tekan Mulai Game Sekarang.';
   listenToRoom(roomCode);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   🪢 ROPE KNOT POSITION
+   🪢 ROPE KNOT POSITION & CARTOON PULLERS
    ═══════════════════════════════════════════════════════════ */
 function updateRopeKnot(id, ropePos, winTarget) {
   const knot = document.getElementById(id);
@@ -1066,6 +1368,21 @@ function updateRopeKnot(id, ropePos, winTarget) {
   const pct = (ropePos + max) / (max * 2);
   const clamped = Math.max(0, Math.min(1, pct));
   knot.style.left = `${clamped * 100}%`;
+
+  // Animate pulling cartoon squads
+  const squadA = document.getElementById('squad-a');
+  const squadB = document.getElementById('squad-b');
+  if (squadA && squadB) {
+    squadA.classList.remove('pulling-lead', 'pulling-struggle');
+    squadB.classList.remove('pulling-lead', 'pulling-struggle');
+    if (ropePos < 0) {
+      squadA.classList.add('pulling-lead');
+      squadB.classList.add('pulling-struggle');
+    } else if (ropePos > 0) {
+      squadB.classList.add('pulling-lead');
+      squadA.classList.add('pulling-struggle');
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1095,7 +1412,7 @@ function launchConfetti() {
   }
   if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
   animateConfetti();
-  setTimeout(stopConfetti, 5000);
+  setTimeout(stopConfetti, 6000);
 }
 
 function animateConfetti() {
@@ -1140,293 +1457,10 @@ function shuffle(arr) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ⚙️ ADMIN PANEL CONTROLLER & FIREBASE CRUD
-   ═══════════════════════════════════════════════════════════ */
-function openAdminPanel() {
-  showScreen('admin');
-  switchAdminTab('questions');
-  renderAdminQuestions();
-  
-  // Fill team names & host pass form
-  document.getElementById('admin-team-a-name').value = customTeamNames.A || "Tim A";
-  document.getElementById('admin-team-b-name').value = customTeamNames.B || "Tim B";
-  const passField = document.getElementById('admin-host-pass-new');
-  if (passField) passField.value = hostMasterPassword;
-  document.getElementById('team-save-status').textContent = '';
-
-  loadAdminHistory();
-}
-
-function switchAdminTab(tabName) {
-  document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.admin-tab-panel').forEach(p => p.classList.remove('active'));
-
-  const btn = document.getElementById(`tab-btn-${tabName}`);
-  const panel = document.getElementById(`tab-content-${tabName}`);
-  if (btn) btn.classList.add('active');
-  if (panel) panel.classList.add('active');
-
-  if (tabName === 'history') {
-    loadAdminHistory();
-  }
-}
-
-/* --- QUESTION MANAGEMENT --- */
-function renderAdminQuestions(filter = '') {
-  const listEl = document.getElementById('admin-questions-list');
-  const countEl = document.getElementById('admin-q-count');
-  if (!listEl) return;
-
-  if (countEl) countEl.textContent = dynamicQuestionBank.length;
-
-  const query = filter.toLowerCase().trim();
-  listEl.innerHTML = '';
-
-  let shownCount = 0;
-  dynamicQuestionBank.forEach((item, idx) => {
-    if (query && !item.q.toLowerCase().includes(query)) return;
-    shownCount++;
-
-    const card = document.createElement('div');
-    card.className = 'admin-q-card';
-    card.innerHTML = `
-      <div class="admin-q-header">
-        <div>
-          <span class="admin-q-number">Soal #${idx + 1}</span>
-          <h3 class="admin-q-title">${item.q}</h3>
-        </div>
-        <div class="admin-q-actions">
-          <button class="btn-q-action btn-q-edit" onclick="openEditQuestionModal(${idx})">✏️ Edit</button>
-          <button class="btn-q-action btn-q-delete" onclick="deleteQuestion(${idx})">🗑️ Hapus</button>
-        </div>
-      </div>
-      <div class="admin-q-choices">
-        ${item.choices.map((c, cIdx) => `
-          <div class="admin-q-choice-item ${cIdx === item.answer ? 'is-correct' : ''}">
-            <span class="choice-badge">${LABELS[cIdx]}</span>
-            <span>${c} ${cIdx === item.answer ? '✓ (Benar)' : ''}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-    listEl.appendChild(card);
-  });
-
-  if (shownCount === 0) {
-    listEl.innerHTML = `<div class="empty-state">Tidak ada soal yang sesuai dengan pencarian "${filter}".</div>`;
-  }
-}
-
-function filterAdminQuestions() {
-  const searchInput = document.getElementById('admin-q-search');
-  renderAdminQuestions(searchInput ? searchInput.value : '');
-}
-
-function openAddQuestionModal() {
-  document.getElementById('qmodal-edit-index').value = '-1';
-  document.getElementById('qmodal-title').textContent = 'Tambah Soal Baru';
-  document.getElementById('qmodal-icon').textContent = '➕';
-  document.getElementById('qmodal-question').value = '';
-  document.getElementById('qmodal-choice-0').value = '';
-  document.getElementById('qmodal-choice-1').value = '';
-  document.getElementById('qmodal-choice-2').value = '';
-  document.getElementById('qmodal-choice-3').value = '';
-  document.getElementById('qmodal-radio-0').checked = true;
-  document.getElementById('qmodal-error').textContent = '';
-
-  document.getElementById('modal-question').classList.add('active');
-}
-
-function openEditQuestionModal(index) {
-  const item = dynamicQuestionBank[index];
-  if (!item) return;
-
-  document.getElementById('qmodal-edit-index').value = index;
-  document.getElementById('qmodal-title').textContent = `Edit Soal #${index + 1}`;
-  document.getElementById('qmodal-icon').textContent = '✏️';
-  document.getElementById('qmodal-question').value = item.q;
-  document.getElementById('qmodal-choice-0').value = item.choices[0] || '';
-  document.getElementById('qmodal-choice-1').value = item.choices[1] || '';
-  document.getElementById('qmodal-choice-2').value = item.choices[2] || '';
-  document.getElementById('qmodal-choice-3').value = item.choices[3] || '';
-  
-  const radio = document.getElementById(`qmodal-radio-${item.answer}`);
-  if (radio) radio.checked = true;
-  
-  document.getElementById('qmodal-error').textContent = '';
-  document.getElementById('modal-question').classList.add('active');
-}
-
-function closeQuestionModal() {
-  document.getElementById('modal-question').classList.remove('active');
-}
-
-async function saveQuestionModal() {
-  const editIdx = parseInt(document.getElementById('qmodal-edit-index').value);
-  const qText = document.getElementById('qmodal-question').value.trim();
-  const c0 = document.getElementById('qmodal-choice-0').value.trim();
-  const c1 = document.getElementById('qmodal-choice-1').value.trim();
-  const c2 = document.getElementById('qmodal-choice-2').value.trim();
-  const c3 = document.getElementById('qmodal-choice-3').value.trim();
-  const errEl = document.getElementById('qmodal-error');
-
-  if (!qText || !c0 || !c1 || !c2 || !c3) {
-    errEl.textContent = '⚠️ Harap isi pertanyaan dan semua 4 pilihan jawaban!';
-    return;
-  }
-
-  const selectedRadio = document.querySelector('input[name="qmodal-correct"]:checked');
-  const answerIdx = selectedRadio ? parseInt(selectedRadio.value) : 0;
-
-  const newQuestionObj = {
-    q: qText,
-    choices: [c0, c1, c2, c3],
-    answer: answerIdx
-  };
-
-  if (editIdx >= 0 && editIdx < dynamicQuestionBank.length) {
-    dynamicQuestionBank[editIdx] = newQuestionObj;
-  } else {
-    dynamicQuestionBank.push(newQuestionObj);
-  }
-
-  try {
-    await db.ref('admin/questions').set(dynamicQuestionBank);
-    closeQuestionModal();
-    renderAdminQuestions();
-  } catch (err) {
-    errEl.textContent = '❌ Gagal menyimpan ke Firebase: ' + err.message;
-  }
-}
-
-async function deleteQuestion(index) {
-  if (dynamicQuestionBank.length <= 3) {
-    alert('⚠️ Game membutuhkan minimal 3 soal!');
-    return;
-  }
-  if (confirm(`Apakah Anda yakin ingin menghapus Soal #${index + 1}?`)) {
-    dynamicQuestionBank.splice(index, 1);
-    try {
-      await db.ref('admin/questions').set(dynamicQuestionBank);
-      renderAdminQuestions();
-    } catch (err) {
-      alert('❌ Gagal menghapus: ' + err.message);
-    }
-  }
-}
-
-async function resetQuestionsToDefault() {
-  if (confirm('Apakah Anda yakin ingin me-reset semua soal ke 20 Soal Standar Pancasila?')) {
-    dynamicQuestionBank = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
-    try {
-      await db.ref('admin/questions').set(dynamicQuestionBank);
-      renderAdminQuestions();
-      alert('✅ Bank soal berhasil di-reset ke 20 soal default!');
-    } catch (err) {
-      alert('❌ Gagal reset: ' + err.message);
-    }
-  }
-}
-
-/* --- SETTINGS (TEAM NAMES & HOST PASS) MANAGEMENT --- */
-async function saveAdminSettings() {
-  const nameA = document.getElementById('admin-team-a-name').value.trim() || "Tim A";
-  const nameB = document.getElementById('admin-team-b-name').value.trim() || "Tim B";
-  const newPassInput = document.getElementById('admin-host-pass-new');
-  const newPass = newPassInput ? newPassInput.value.trim() : "";
-  const statusEl = document.getElementById('team-save-status');
-
-  customTeamNames = { A: nameA, B: nameB };
-  if (newPass) {
-    hostMasterPassword = newPass;
-  }
-
-  try {
-    await Promise.all([
-      db.ref('admin/settings/teamNames').set(customTeamNames),
-      newPass ? db.ref('admin/settings/hostPassword').set(newPass) : Promise.resolve()
-    ]);
-    statusEl.textContent = '✅ Pengaturan berhasil disimpan!';
-    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
-  } catch (err) {
-    statusEl.textContent = '❌ Gagal menyimpan: ' + err.message;
-  }
-}
-
-function saveTeamNames() {
-  return saveAdminSettings();
-}
-
-/* --- HISTORY MANAGEMENT --- */
-async function loadAdminHistory() {
-  const listEl = document.getElementById('admin-history-list');
-  const countEl = document.getElementById('admin-hist-count');
-  if (!listEl) return;
-
-  listEl.innerHTML = '<div class="empty-state">⏳ Memuat riwayat pertandingan...</div>';
-
-  try {
-    const snap = await db.ref('history').limitToLast(50).get();
-    if (!snap.exists()) {
-      listEl.innerHTML = '<div class="empty-state">Belum ada riwayat pertandingan.</div>';
-      if (countEl) countEl.textContent = '0';
-      return;
-    }
-
-    const rawData = snap.val();
-    const items = Object.keys(rawData).map(key => ({ id: key, ...rawData[key] })).reverse();
-    if (countEl) countEl.textContent = items.length;
-
-    listEl.innerHTML = '';
-    items.forEach(h => {
-      const dateStr = h.timestamp ? new Date(h.timestamp).toLocaleString('id-ID') : '-';
-      const winnerBadge = h.winner === 'A'
-        ? `<span class="hist-winner-badge hist-win-a">🏆 ${h.teamA || 'Tim A'} Menang</span>`
-        : h.winner === 'B'
-          ? `<span class="hist-winner-badge hist-win-b">🏆 ${h.teamB || 'Tim B'} Menang</span>`
-          : `<span class="hist-winner-badge hist-win-draw">🤝 Seri</span>`;
-
-      const card = document.createElement('div');
-      card.className = 'hist-card';
-      card.innerHTML = `
-        <div class="hist-info">
-          <span class="hist-room-code">Room: ${h.roomCode || '------'}</span>
-          <span class="hist-time">📅 ${dateStr}</span>
-        </div>
-        <div class="hist-vs-box">
-          <span class="hist-score hist-score-a">${h.scoreA ?? 0}</span>
-          <span>vs</span>
-          <span class="hist-score hist-score-b">${h.scoreB ?? 0}</span>
-        </div>
-        <div>
-          ${winnerBadge}
-        </div>
-      `;
-      listEl.appendChild(card);
-    });
-
-  } catch (err) {
-    listEl.innerHTML = `<div class="empty-state">❌ Gagal memuat riwayat: ${err.message}</div>`;
-  }
-}
-
-async function clearMatchHistory() {
-  if (confirm('Hapus seluruh riwayat pertandingan? Tindakan ini tidak bisa dibatalkan.')) {
-    try {
-      await db.ref('history').remove();
-      loadAdminHistory();
-    } catch (err) {
-      alert('❌ Gagal menghapus riwayat: ' + err.message);
-    }
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
    🌐 SYNC INITIAL QUESTIONS & SETTINGS FROM FIREBASE
    ═══════════════════════════════════════════════════════════ */
 async function initFirebaseDataSync() {
   try {
-    // Sync Questions
     const qSnap = await db.ref('admin/questions').get();
     if (qSnap.exists()) {
       const data = qSnap.val();
@@ -1436,23 +1470,20 @@ async function initFirebaseDataSync() {
         dynamicQuestionBank = Object.values(data);
       }
     } else {
-      // Seed default questions
       await db.ref('admin/questions').set(DEFAULT_QUESTIONS);
     }
 
-    // Sync Team Names
     const teamSnap = await db.ref('admin/settings/teamNames').get();
     if (teamSnap.exists()) {
       customTeamNames = teamSnap.val();
     }
 
-    // Sync Host Password
     const passSnap = await db.ref('admin/settings/hostPassword').get();
     if (passSnap.exists()) {
       hostMasterPassword = passSnap.val();
     }
   } catch (e) {
-    console.warn('Firebase init sync warning (using defaults):', e);
+    console.warn('Firebase init sync warning:', e);
   }
 }
 
@@ -1465,7 +1496,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   const room = params.get('room');
   const team = params.get('team');
-  const role = params.get('role');
 
   if (room && team) {
     selectedTeam = team.toUpperCase();
