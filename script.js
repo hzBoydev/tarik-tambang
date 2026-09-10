@@ -160,7 +160,13 @@ const ALL_SCREENS = [
   'player-lobby', 'spectator', 'player-game', 'result'
 ];
 
+let currentJoinRoomListener = null;
+
 function showScreen(name) {
+  if (name !== 'join-room' && currentJoinRoomListener) {
+    currentJoinRoomListener.off();
+    currentJoinRoomListener = null;
+  }
   currentScreen = name;
   ALL_SCREENS.forEach(s => {
     const el = document.getElementById(`screen-${s}`);
@@ -175,6 +181,13 @@ function goToCreateRoom() {
 
 function goToJoinRoom() {
   if (window.Sound) Sound.play('click');
+  resetTeamPickers();
+  const joinInput = document.getElementById('join-code');
+  if (joinInput) {
+    joinInput.value = '';
+  }
+  const errEl = document.getElementById('join-error');
+  if (errEl) errEl.textContent = '';
   showScreen('join-room');
 }
 
@@ -182,6 +195,10 @@ function goHome() {
   if (window.Sound) Sound.play('click');
   stopLocalTimer();
   detachListeners();
+  if (currentJoinRoomListener) {
+    currentJoinRoomListener.off();
+    currentJoinRoomListener = null;
+  }
   myRole = myTeam = roomCode = roomRef = null;
   hasAnswered = isProcessing = false;
   lastRenderedQ = -1;
@@ -304,7 +321,8 @@ async function createRoom() {
     roomRef = db.ref(`rooms/${code}`);
 
     document.getElementById('host-room-code').textContent = code;
-    document.getElementById('spec-room-badge').textContent = `Room: ${code}`;
+    const specBadge = document.getElementById('spec-room-badge');
+    if (specBadge) specBadge.textContent = `Room: ${code}`;
     const base = window.location.origin + window.location.pathname;
     document.getElementById('link-team-a').value = `${base}?room=${code}&team=A`;
     document.getElementById('link-team-b').value = `${base}?room=${code}&team=B`;
@@ -337,9 +355,110 @@ function copyLink(team) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   🎮 JOIN ROOM (PLAYER)
+   🎮 JOIN ROOM & LIVE TEAM AVAILABILITY
    ═══════════════════════════════════════════════════════════ */
+function resetTeamPickers() {
+  const btnA = document.getElementById('pick-team-a');
+  const btnB = document.getElementById('pick-team-b');
+  const joinBtn = document.getElementById('btn-join-room');
+  const errEl = document.getElementById('join-error');
+
+  if (btnA) {
+    btnA.disabled = false;
+    btnA.classList.remove('occupied');
+    btnA.innerHTML = `<span class="team-pick-emoji">🔴</span><span>Tim A</span>`;
+  }
+  if (btnB) {
+    btnB.disabled = false;
+    btnB.classList.remove('occupied');
+    btnB.innerHTML = `<span class="team-pick-emoji">🔵</span><span>Tim B</span>`;
+  }
+  if (joinBtn) joinBtn.disabled = false;
+  if (errEl && errEl.textContent.includes('penuh')) errEl.textContent = '';
+}
+
+function onJoinCodeInput(val) {
+  const code = (val || '').trim().toUpperCase();
+  const joinInput = document.getElementById('join-code');
+  if (joinInput && joinInput.value !== code) {
+    joinInput.value = code;
+  }
+  const errEl = document.getElementById('join-error');
+  if (errEl) errEl.textContent = '';
+
+  if (currentJoinRoomListener) {
+    currentJoinRoomListener.off();
+    currentJoinRoomListener = null;
+  }
+
+  if (code.length === 6) {
+    checkTeamAvailability(code);
+  } else {
+    resetTeamPickers();
+  }
+}
+
+function checkTeamAvailability(code) {
+  if (currentJoinRoomListener) {
+    currentJoinRoomListener.off();
+  }
+
+  currentJoinRoomListener = db.ref(`rooms/${code}`);
+  currentJoinRoomListener.on('value', snap => {
+    if (!snap.exists()) {
+      resetTeamPickers();
+      return;
+    }
+
+    const roomData = snap.val();
+    const teams = roomData.teams || {};
+    const aJoined = !!teams.A?.joined;
+    const bJoined = !!teams.B?.joined;
+    const nameA = roomData.settings?.teamNames?.A || 'Tim A';
+    const nameB = roomData.settings?.teamNames?.B || 'Tim B';
+
+    const btnA = document.getElementById('pick-team-a');
+    const btnB = document.getElementById('pick-team-b');
+    const errEl = document.getElementById('join-error');
+    const joinBtn = document.getElementById('btn-join-room');
+
+    if (btnA) {
+      btnA.disabled = aJoined;
+      btnA.classList.toggle('occupied', aJoined);
+      btnA.innerHTML = aJoined
+        ? `<span class="team-pick-emoji">🔴</span><span>${nameA}</span><span class="team-status-tag">⛔ Sudah Dipilih</span>`
+        : `<span class="team-pick-emoji">🔴</span><span>${nameA}</span>`;
+    }
+
+    if (btnB) {
+      btnB.disabled = bJoined;
+      btnB.classList.toggle('occupied', bJoined);
+      btnB.innerHTML = bJoined
+        ? `<span class="team-pick-emoji">🔵</span><span>${nameB}</span><span class="team-status-tag">⛔ Sudah Dipilih</span>`
+        : `<span class="team-pick-emoji">🔵</span><span>${nameB}</span>`;
+    }
+
+    if (aJoined && bJoined) {
+      if (errEl) errEl.textContent = '⚠️ Room ini sudah penuh (kedua tim sudah terisi)!';
+      if (joinBtn) joinBtn.disabled = true;
+    } else {
+      if (errEl && errEl.textContent.includes('penuh')) errEl.textContent = '';
+      if (joinBtn) joinBtn.disabled = false;
+
+      // Auto switch if currently selected team is occupied
+      if (selectedTeam === 'A' && aJoined && !bJoined) {
+        pickTeam('B');
+      } else if (selectedTeam === 'B' && bJoined && !aJoined) {
+        pickTeam('A');
+      }
+    }
+  });
+}
+
 function pickTeam(team) {
+  const btn = document.getElementById(`pick-team-${team.toLowerCase()}`);
+  if (btn && btn.disabled) return;
+
   if (window.Sound) Sound.play('click');
   selectedTeam = team;
   document.getElementById('pick-team-a').classList.toggle('active', team === 'A');
@@ -376,6 +495,20 @@ async function joinRoomByCode(code, team) {
     if (roomData.status === 'finished') {
       errEl.textContent = '⚠️ Pertandingan room ini sudah selesai.';
       if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk Pertandingan'; }
+      return;
+    }
+
+    // Check if selected team is already taken by another player
+    if (roomData.teams?.[team]?.joined) {
+      const takenName = team === 'A'
+        ? (roomData.settings?.teamNames?.A || 'Tim A')
+        : (roomData.settings?.teamNames?.B || 'Tim B');
+      errEl.textContent = `⚠️ ${takenName} sudah dipilih oleh pemain lain! Silakan pilih tim yang masih kosong.`;
+      if (joinBtn) { joinBtn.disabled = false; joinBtn.textContent = '🚀 Masuk Pertandingan'; }
+      // Update picker status immediately
+      if (currentJoinRoomListener) {
+        checkTeamAvailability(code);
+      }
       return;
     }
 
@@ -555,7 +688,8 @@ async function hostStartGame() {
   await db.ref(`rooms/${roomCode}`).update({ status: 'playing', game: gameData });
 
   showScreen('spectator');
-  document.getElementById('spec-room-badge').textContent = `Room: ${roomCode}`;
+  const specBadge = document.getElementById('spec-room-badge');
+  if (specBadge) specBadge.textContent = `Room: ${roomCode}`;
   setupHostAnswerWatcher();
 
   if (window.Sound) {
@@ -1301,33 +1435,67 @@ function showResultScreen(game, settings) {
   if (speedAEl) speedAEl.textContent = `⚡ Rata-rata: ${avgSpeedA > 0 ? avgSpeedA.toFixed(1) + 's' : '-'}`;
   if (speedBEl) speedBEl.textContent = `⚡ Rata-rata: ${avgSpeedB > 0 ? avgSpeedB.toFixed(1) + 's' : '-'}`;
 
-  if (winReason === 'speed_tiebreaker') {
-    trophy.textContent = '⚡';
-    if (winner === 'A') {
-      title.textContent = `🔴 ${nameA.toUpperCase()} MENANG TIEBREAKER!`;
-      sub.textContent = `Skor imbang ${scoreA} - ${scoreB}! ${nameA} menang karena lebih cepat menjawab (${avgSpeedA.toFixed(1)}s vs ${avgSpeedB.toFixed(1)}s)!`;
+  if (myRole === 'player') {
+    // 📱 PLAYER VIEW
+    if (winner === 'draw') {
+      trophy.textContent = '🤝';
+      title.textContent = '🤝 PERTANDINGAN SERI!';
+      sub.textContent = `Pertandingan berakhir imbang (${scoreA} - ${scoreB})!`;
+    } else if (winner === myTeam) {
+      trophy.textContent = '🏆';
+      title.textContent = '🎉 TIM ANDA MENANG!';
+      if (winReason === 'speed_tiebreaker') {
+        sub.textContent = `Luar biasa! Skor imbang (${scoreA} - ${scoreB}), namun Tim Anda menang karena kecepatan menjawab lebih unggul!`;
+      } else if (winReason === 'knockout') {
+        sub.textContent = `Hebat sekali! Tim Anda berhasil menarik tali melewati batas garis kemenangan!`;
+      } else {
+        sub.textContent = `Selamat! Tim Anda berhasil mengalahkan lawan dan memenangkan pertandingan!`;
+      }
+      if (window.Sound) Sound.play('victory');
+      launchConfetti();
     } else {
-      title.textContent = `🔵 ${nameB.toUpperCase()} MENANG TIEBREAKER!`;
-      sub.textContent = `Skor imbang ${scoreA} - ${scoreB}! ${nameB} menang karena lebih cepat menjawab (${avgSpeedB.toFixed(1)}s vs ${avgSpeedA.toFixed(1)}s)!`;
+      trophy.textContent = '😢';
+      title.textContent = '😢 TIM ANDA KALAH';
+      if (winReason === 'speed_tiebreaker') {
+        sub.textContent = `Skor imbang (${scoreA} - ${scoreB}), namun tim lawan memiliki kecepatan menjawab lebih cepat.`;
+      } else if (winReason === 'knockout') {
+        sub.textContent = `Tim lawan berhasil menarik tali melewati garis batas. Tetap semangat!`;
+      } else {
+        sub.textContent = `Jangan berkecil hati! Tingkatkan kekompakan dan kecepatan di pertandingan berikutnya!`;
+      }
+      if (window.Sound) Sound.play('wrong');
     }
-    if (window.Sound) Sound.play('victory');
-    launchConfetti();
-  } else if (winner === 'A') {
-    trophy.textContent = '🏆';
-    title.textContent = `🔴 ${nameA.toUpperCase()} MENANG!`;
-    sub.textContent = `Selamat! ${nameA} berhasil memenangkan pertandingan!`;
-    if (window.Sound) Sound.play('victory');
-    launchConfetti();
-  } else if (winner === 'B') {
-    trophy.textContent = '🏆';
-    title.textContent = `🔵 ${nameB.toUpperCase()} MENANG!`;
-    sub.textContent = `Selamat! ${nameB} berhasil memenangkan pertandingan!`;
-    if (window.Sound) Sound.play('victory');
-    launchConfetti();
   } else {
-    trophy.textContent = '🤝';
-    title.textContent = '🤝 PERTANDINGAN SERI!';
-    sub.textContent = `Kedua tim memiliki skor dan kecepatan yang sama kuat (${scoreA} - ${scoreB})!`;
+    // 🖥️ HOST / SPECTATOR VIEW
+    if (winner === 'A') {
+      trophy.textContent = '🏆';
+      title.textContent = `🔴 ${nameA.toUpperCase()} MENANG!`;
+      if (winReason === 'speed_tiebreaker') {
+        sub.textContent = `Skor imbang ${scoreA} - ${scoreB}! ${nameA} menang karena lebih cepat menjawab (${avgSpeedA.toFixed(1)}s vs ${avgSpeedB.toFixed(1)}s)!`;
+      } else if (winReason === 'knockout') {
+        sub.textContent = `Luar biasa! ${nameA} berhasil menarik tali melewati garis kemenangan!`;
+      } else {
+        sub.textContent = `Selamat! ${nameA} berhasil memenangkan pertandingan (${scoreA} vs ${scoreB})!`;
+      }
+      if (window.Sound) Sound.play('victory');
+      launchConfetti();
+    } else if (winner === 'B') {
+      trophy.textContent = '🏆';
+      title.textContent = `🔵 ${nameB.toUpperCase()} MENANG!`;
+      if (winReason === 'speed_tiebreaker') {
+        sub.textContent = `Skor imbang ${scoreA} - ${scoreB}! ${nameB} menang karena lebih cepat menjawab (${avgSpeedB.toFixed(1)}s vs ${avgSpeedA.toFixed(1)}s)!`;
+      } else if (winReason === 'knockout') {
+        sub.textContent = `Luar biasa! ${nameB} berhasil menarik tali melewati garis kemenangan!`;
+      } else {
+        sub.textContent = `Selamat! ${nameB} berhasil memenangkan pertandingan (${scoreB} vs ${scoreA})!`;
+      }
+      if (window.Sound) Sound.play('victory');
+      launchConfetti();
+    } else {
+      trophy.textContent = '🤝';
+      title.textContent = '🤝 PERTANDINGAN SERI!';
+      sub.textContent = `Kedua tim memiliki skor dan kecepatan yang sama kuat (${scoreA} - ${scoreB})!`;
+    }
   }
 
   document.getElementById('btn-play-again').style.display = myRole === 'host' ? '' : 'none';

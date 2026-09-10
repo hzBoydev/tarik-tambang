@@ -242,7 +242,7 @@
             type="text" id="join-code" maxlength="6"
             placeholder="Contoh: ABC123"
             autocomplete="off"
-            oninput="this.value=this.value.toUpperCase()"
+            oninput="this.value=this.value.toUpperCase(); onJoinCodeInput(this.value);"
           />
         </div>
 
@@ -302,14 +302,6 @@
 
   <!-- ══════════════════════════════════════════ -->
   <section id="screen-spectator" class="screen screen-fullscreen-spec">
-    <div class="spectator-topbar">
-      <div class="spectator-room-badge" id="spec-room-badge">Room: ------</div>
-      <div class="host-view-notice">
-        <span class="hvn-icon">👁️</span>
-        <span class="hvn-text">Layar Host / Proyektor · Pemain Menjawab Langsung dari HP / Laptop Masing-masing</span>
-      </div>
-    </div>
-
     <!-- GAME HEADER -->
     <header class="game-header">
       <div class="team-score score-a">
