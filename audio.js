@@ -48,7 +48,7 @@ class SoundEngine {
   ensureContext() {
     this.initAudioContext();
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
   }
 
@@ -70,7 +70,7 @@ class SoundEngine {
     this.sfxEnabled = !this.sfxEnabled;
     localStorage.setItem('ttq_sfx', this.sfxEnabled);
     if (this.sfxEnabled) {
-      this.play('click');
+      this.play('correct');
     }
     this.updateAudioButtons();
     return this.sfxEnabled;
@@ -89,26 +89,33 @@ class SoundEngine {
     }
   }
 
-  // Cartoon Polyphonic / Chiptune Tone Generator
-  playTone(freq, type = 'sine', duration = 0.2, gainLevel = 0.15, startOffset = 0) {
+  // Cartoon Polyphonic / Chiptune Tone Generator with Envelope
+  playTone(freq, type = 'sine', duration = 0.25, gainLevel = 0.4, startOffset = 0) {
     if (!this.ctx) return;
     try {
+      this.ensureContext();
+      const now = this.ctx.currentTime;
+      const t0 = now + Math.max(0, startOffset);
+      const t1 = t0 + 0.015;
+      const t2 = t0 + Math.max(0.04, duration);
+
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + startOffset);
+      osc.frequency.setValueAtTime(freq, t0);
 
-      gain.gain.setValueAtTime(gainLevel, this.ctx.currentTime + startOffset);
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + startOffset + duration);
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(gainLevel, t1);
+      gain.gain.linearRampToValueAtTime(0.001, t2);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
-      osc.start(this.ctx.currentTime + startOffset);
-      osc.stop(this.ctx.currentTime + startOffset + duration);
+      osc.start(t0);
+      osc.stop(t2 + 0.05);
     } catch (e) {
-      // Audio context policy safe catch
+      console.warn('playTone error:', e);
     }
   }
 
@@ -119,55 +126,38 @@ class SoundEngine {
     if (!this.ctx) return;
 
     switch (sfxName) {
-      case 'correct': // "Ting-Tung!" Game Show chime
-        // "Ting" (High chime with shimmer)
-        this.playTone(880.00, 'sine', 0.18, 0.28, 0.0);   // A5
-        this.playTone(1760.00, 'triangle', 0.12, 0.15, 0.0); // Bell shimmer harmonic
-        // "Tung" (Higher joyful bell resolution)
-        this.playTone(1318.51, 'sine', 0.35, 0.32, 0.15); // E6
-        this.playTone(2637.02, 'triangle', 0.22, 0.18, 0.15); // High sparkle
+      case 'correct': // "Ding-Dong-Ding!" Punchy Crystal Clear Game Show Chime
+        // Chime 1: G5 (784Hz) + G6 Shimmer
+        this.playTone(783.99, 'sine', 0.22, 0.45, 0.0);
+        this.playTone(1567.98, 'triangle', 0.18, 0.30, 0.0);
+        // Chime 2: C6 (1046Hz) + C7 Sparkle
+        this.playTone(1046.50, 'sine', 0.26, 0.55, 0.11);
+        this.playTone(2093.00, 'triangle', 0.20, 0.35, 0.11);
+        // Chime 3: E6 (1318.5Hz) High Joyful Resolution Chord
+        this.playTone(1318.51, 'sine', 0.45, 0.65, 0.22);
+        this.playTone(2637.02, 'triangle', 0.35, 0.40, 0.22);
+        this.playTone(659.25, 'triangle', 0.40, 0.25, 0.22);
         break;
 
-      case 'wrong': // "Te-Tot!" Game Show buzzer
-        // "Te-" (First buzzer tone)
-        this.playTone(220.00, 'sawtooth', 0.18, 0.32, 0.0);
-        this.playTone(110.00, 'square', 0.18, 0.20, 0.0);
-        // "-Tot" (Lower descending buzzer tone)
-        this.playTone(146.83, 'sawtooth', 0.38, 0.35, 0.18);
-        this.playTone(73.42, 'square', 0.38, 0.22, 0.18);
+      case 'wrong': // "Bzzz-Bzzz!" Deep Punchy Game Show Buzzer
+        // First Buzz: 160Hz + 240Hz + 110Hz Sawtooth / Square Dissonance
+        this.playTone(160.00, 'sawtooth', 0.22, 0.55, 0.0);
+        this.playTone(240.00, 'sawtooth', 0.22, 0.40, 0.0);
+        this.playTone(110.00, 'square', 0.22, 0.35, 0.0);
+        // Second Buzz: Lower Descending Harsh Buzzer
+        this.playTone(130.00, 'sawtooth', 0.38, 0.60, 0.24);
+        this.playTone(195.00, 'sawtooth', 0.38, 0.45, 0.24);
+        this.playTone(85.00, 'square', 0.38, 0.40, 0.24);
         break;
 
       case 'pull': // Dynamic tug-of-war rope whoosh sound
-        try {
-          const bufferSize = this.ctx.sampleRate * 0.25;
-          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
-          }
-          const noise = this.ctx.createBufferSource();
-          noise.buffer = buffer;
-          const filter = this.ctx.createBiquadFilter();
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(300, this.ctx.currentTime);
-          filter.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
-          filter.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.25);
-          
-          const gain = this.ctx.createGain();
-          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
-
-          noise.connect(filter);
-          filter.connect(gain);
-          gain.connect(this.ctx.destination);
-
-          noise.start();
-          this.playTone(220, 'triangle', 0.2, 0.2, 0.05);
-        } catch (e) {}
+        this.playTone(220, 'triangle', 0.22, 0.35, 0.0);
+        this.playTone(330, 'sine', 0.25, 0.30, 0.05);
+        this.playTone(165, 'sawtooth', 0.20, 0.20, 0.0);
         break;
 
       case 'tick': // Countdown timer tick
-        this.playTone(880, 'sine', 0.05, 0.1, 0);
+        this.playTone(880, 'sine', 0.05, 0.15, 0);
         break;
 
       case 'go': // 5s prep ended -> Answer unlocked!
@@ -250,7 +240,13 @@ class SoundEngine {
 // Global Sound Instance
 const Sound = new SoundEngine();
 
-// Auto-enable Web Audio Context on first user touch/click
+// Auto-enable & resume Web Audio Context on any user interaction
+['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    Sound.ensureContext();
+  }, { passive: true });
+});
+
 window.addEventListener('click', () => {
   Sound.ensureContext();
   if (Sound.musicEnabled && !Sound.bgmPlaying) {

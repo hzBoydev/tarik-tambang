@@ -1825,7 +1825,8 @@ async function hostStartGame() {
   const gameData = {
     questionOrder: qOrder,
     currentQ: 0,
-    phase: 'reading', // 'reading' (5s) | 'answering' | 'review'
+    phase: 'countdown', // 'countdown' (3s) | 'reading' (5s) | 'answering' | 'review'
+    countdownLeft: 3,
     readingTimeLeft: READING_DURATION,
     answeringTimeLeft: answerDuration,
     ropePos: 0,
@@ -1851,25 +1852,44 @@ async function hostStartGame() {
   setupHostAnswerWatcher();
 
   if (window.Sound) {
-    Sound.play('start');
-    Sound.startBGM();
+    Sound.play('tick');
   }
 
-  setTimeout(() => startTwoPhaseHostTimer(settings.timerDuration), 600);
+  setTimeout(() => startTwoPhaseHostTimer(settings.timerDuration, true), 300);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ⏱ TWO-PHASE HOST TIMER (5s Reading + Answering Phase)
+   ⏱ TWO-PHASE HOST TIMER (3s Countdown + 5s Reading + Answering)
    ═══════════════════════════════════════════════════════════ */
-function startTwoPhaseHostTimer(totalDuration) {
+function startTwoPhaseHostTimer(totalDuration, startWithCountdown = false) {
   stopLocalTimer();
 
-  let phase = 'reading';
+  let phase = startWithCountdown ? 'countdown' : 'reading';
+  let countdownLeft = 3;
   let readingLeft = READING_DURATION;
   let answeringLeft = Math.max(5, totalDuration - READING_DURATION);
 
   localTimerInterval = setInterval(async () => {
-    if (phase === 'reading') {
+    if (phase === 'countdown') {
+      countdownLeft--;
+      if (countdownLeft > 0) {
+        if (window.Sound) Sound.play('tick');
+        db.ref(`rooms/${roomCode}/game/countdownLeft`).set(countdownLeft);
+      } else {
+        // Countdown finished! Transition to reading phase
+        phase = 'reading';
+        if (window.Sound) {
+          Sound.play('start');
+          Sound.startBGM();
+        }
+        await db.ref(`rooms/${roomCode}/game`).update({
+          phase: 'reading',
+          countdownLeft: 0,
+          readingTimeLeft: READING_DURATION,
+          answeringTimeLeft: answeringLeft
+        });
+      }
+    } else if (phase === 'reading') {
       readingLeft--;
       if (readingLeft <= 0) {
         // Transition to answering phase
@@ -1991,6 +2011,10 @@ async function hostProcessAnswer(team, idx) {
     else { scoreB++; ropePos++; teamBStatus = 'correct'; }
 
     stopLocalTimer();
+    if (window.Sound) {
+      Sound.play('correct');
+      setTimeout(() => Sound.play('pull'), 160);
+    }
 
     const winTarget = settings.winTarget;
     let winner = null;
@@ -2030,6 +2054,8 @@ async function hostProcessAnswer(team, idx) {
 
   } else {
     // WRONG: Tambang TETAP (tidak bergerak). Hanya ubah status tim menjadi 'wrong'
+    if (window.Sound) Sound.play('wrong');
+
     if (team === 'A') {
       teamAStatus = 'wrong';
     } else {
@@ -2188,10 +2214,58 @@ async function endGameOnFirebase(winner, scoreA, scoreB, settings, winReason = '
   }
 }
 
+let lastRenderedCountdownNum = -1;
+
+function updateCountdownOverlay(game) {
+  const overlay = document.getElementById('game-countdown-overlay');
+  const numEl = document.getElementById('countdown-num');
+  const subEl = document.getElementById('countdown-sub');
+  if (!overlay || !numEl) return;
+
+  if (game.phase === 'countdown') {
+    overlay.classList.add('show');
+    const val = game.countdownLeft ?? 3;
+    if (lastRenderedCountdownNum !== val) {
+      lastRenderedCountdownNum = val;
+      numEl.textContent = val;
+      numEl.classList.remove('animate-pulse');
+      void numEl.offsetWidth; // trigger reflow for animation restart
+      numEl.classList.add('animate-pulse');
+
+      if (window.Sound) Sound.play('tick');
+
+      if (val === 3) {
+        subEl.textContent = 'Bersiap-siap di posisi masing-masing!';
+      } else if (val === 2) {
+        subEl.textContent = 'Fokus dan siapkan jarimu!';
+      } else if (val === 1) {
+        subEl.textContent = 'Siap-siap menarik tali!';
+      }
+    }
+  } else {
+    if (lastRenderedCountdownNum !== -1) {
+      // Just finished countdown: show brief "TARIK!" flash then hide
+      lastRenderedCountdownNum = -1;
+      numEl.textContent = 'TARIK! 🪢';
+      subEl.textContent = 'Pertandingan dimulai!';
+      numEl.classList.remove('animate-pulse');
+      void numEl.offsetWidth;
+      numEl.classList.add('animate-pulse');
+      setTimeout(() => {
+        overlay.classList.remove('show');
+      }, 650);
+    } else {
+      overlay.classList.remove('show');
+    }
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    🖥 SPECTATOR UI (Host Arena)
    ═══════════════════════════════════════════════════════════ */
 function updateSpectatorUI(game, settings) {
+  updateCountdownOverlay(game);
+
   const nameA = settings?.teamNames?.A || 'Tim A';
   const nameB = settings?.teamNames?.B || 'Tim B';
 
@@ -2258,7 +2332,7 @@ function updateSpectatorUI(game, settings) {
 
   // Feedback Overlay
   if (game.lastResult && game.phase === 'review') {
-    showSpecFeedback(game.lastResult);
+    showSpecFeedback(game.lastResult, game.currentQ);
   } else {
     hideSpecFeedback();
   }
@@ -2351,10 +2425,26 @@ function hideTurnChanceToast() {
   if (turnToastTimer) clearTimeout(turnToastTimer);
 }
 
-function showSpecFeedback(result) {
+let lastProcessedSpecResultKey = null;
+
+function showSpecFeedback(result, currentQ = 0) {
   const overlay = document.getElementById('spec-feedback-overlay');
   const content = document.getElementById('spec-feedback-content');
   if (!overlay || !content) return;
+
+  const resultKey = `${currentQ}_${result.type}_${result.team}_${result.idx}`;
+  const isNewResult = (lastProcessedSpecResultKey !== resultKey);
+  lastProcessedSpecResultKey = resultKey;
+
+  if (isNewResult && window.Sound) {
+    if (result.type === 'correct') {
+      Sound.play('correct');
+      setTimeout(() => Sound.play('pull'), 180);
+    } else if (result.type === 'wrong' || result.type === 'turn_chance' || result.type === 'timeout') {
+      Sound.play('wrong');
+    }
+  }
+
   content.className = `feedback-content feedback-${result.type}`;
   content.innerHTML = (result.message || '').replace(/\n/g, '<br>');
   overlay.classList.add('show');
@@ -2447,6 +2537,7 @@ function hidePlayerFeedback() {
    📱 PLAYER GAME UI
    ═══════════════════════════════════════════════════════════ */
 function updatePlayerUI(game, settings) {
+  updateCountdownOverlay(game);
   if (!game.questionOrder) return;
 
   const qIdx = game.questionOrder[game.currentQ];
@@ -2621,10 +2712,14 @@ function showResultScreen(game, settings) {
 
   if (myRole === 'player') {
     // 📱 PLAYER VIEW
+    const myTeamName = myTeam === 'A' ? nameA : nameB;
+    const oppTeamName = myTeam === 'A' ? nameB : nameA;
+
     if (winner === 'draw') {
       trophy.textContent = '🤝';
-      title.textContent = '🤝 PERTANDINGAN SERI!';
-      sub.textContent = `Pertandingan berakhir imbang (${scoreA} - ${scoreB})!`;
+      title.textContent = '🤝 TIM ANDA DRAW DENGAN LAWAN!';
+      sub.textContent = `Pertandingan berakhir imbang (Draw)! Tim Anda (${myTeamName}) dan lawan (${oppTeamName}) sama-sama kuat dengan skor ${scoreA} - ${scoreB}!`;
+      if (window.Sound) Sound.play('start');
     } else if (winner === myTeam) {
       trophy.textContent = '🏆';
       title.textContent = '🎉 TIM ANDA MENANG!';
