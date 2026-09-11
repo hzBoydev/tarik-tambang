@@ -90,8 +90,11 @@
             <input type="text" id="admin-q-search" placeholder="Cari pertanyaan soal..." oninput="filterAdminQuestions()" />
           </div>
           <div class="toolbar-actions">
+            <button class="btn-admin-action-btn btn-reset-usage" onclick="resetAllQuestionUsage()" title="Reset frekuensi pemakaian seluruh soal ke 0/2x">
+              🔄 Reset Kuota (0/2x)
+            </button>
             <button class="btn-admin-action-btn btn-reset-q" onclick="resetQuestionsToDefault()">
-              🔄 Reset Default (20 Soal)
+              📑 Default (120 Soal)
             </button>
             <button class="btn-admin-action-btn btn-add-q" onclick="openAddQuestionModal()">
               ➕ Tambah Soal

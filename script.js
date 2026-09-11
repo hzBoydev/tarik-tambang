@@ -30,104 +30,1204 @@ let pendingHostAction = null; // 'create-room' | 'admin'
 
 const DEFAULT_QUESTIONS = [
   {
-    q: "Pancasila sebagai dasar negara Indonesia pertama kali diusulkan oleh Ir. Soekarno pada sidang BPUPKI tanggal…",
-    choices: ["28 Mei 1945", "1 Juni 1945", "22 Juni 1945", "17 Agustus 1945"],
-    answer: 1
+    "q": "Pancasila bagi bangsa Indonesia berkedudukan sebagai ....",
+    "choices": [
+      "dasar negara dan pandangan hidup bangsa",
+      "peraturan pemerintah",
+      "hukum daerah",
+      "semboyan negara"
+    ],
+    "answer": 0
   },
   {
-    q: "Lambang negara Indonesia yang memuat Pancasila bernama…",
-    choices: ["Garuda Nusantara", "Burung Garuda", "Garuda Pancasila", "Sang Saka Merah Putih"],
-    answer: 2
+    "q": "Sikap yang sesuai dengan sila pertama Pancasila di lingkungan sekolah adalah ....",
+    "choices": [
+      "memaksakan agama kepada teman",
+      "menghormati teman yang sedang menjalankan ibadah",
+      "memilih teman berdasarkan agama",
+      "melarang teman menjalankan ibadah"
+    ],
+    "answer": 1
   },
   {
-    q: "Sila ke-3 Pancasila berbunyi…",
-    choices: ["Kemanusiaan yang Adil dan Beradab", "Persatuan Indonesia", "Keadilan Sosial bagi Seluruh Rakyat Indonesia", "Ketuhanan Yang Maha Esa"],
-    answer: 1
+    "q": "Ketika terjadi perbedaan pendapat dalam kelompok, sikap yang sesuai dengan nilai Pancasila adalah ....",
+    "choices": [
+      "memaksakan pendapat sendiri",
+      "meninggalkan kelompok",
+      "bermusyawarah untuk mencapai mufakat",
+      "menyerahkan keputusan kepada satu orang"
+    ],
+    "answer": 2
   },
   {
-    q: "Badan yang bertugas mempersiapkan kemerdekaan Indonesia dan merumuskan dasar negara adalah…",
-    choices: ["PPKI", "DPR", "BPUPKI", "MPR"],
-    answer: 2
+    "q": "Semboyan Bhinneka Tunggal Ika memiliki arti ....",
+    "choices": [
+      "bersatu kita teguh",
+      "berbeda-beda tetapi tetap satu",
+      "satu bangsa satu budaya",
+      "bersama membangun negara"
+    ],
+    "answer": 1
   },
   {
-    q: "Lambang sila ke-1 (Ketuhanan Yang Maha Esa) pada Garuda Pancasila adalah…",
-    choices: ["Pohon Beringin", "Bintang Emas", "Rantai Emas", "Kepala Banteng"],
-    answer: 1
+    "q": "Indonesia memiliki banyak suku, agama, bahasa, dan budaya. Sikap yang tepat terhadap keberagaman tersebut adalah ....",
+    "choices": [
+      "menganggap budaya sendiri paling unggul",
+      "menghindari orang yang berbeda suku",
+      "menghargai dan menghormati perbedaan",
+      "memaksakan budaya sendiri kepada orang lain"
+    ],
+    "answer": 2
   },
   {
-    q: "Piagam Jakarta ditandatangani pada tanggal…",
-    choices: ["1 Juni 1945", "17 Agustus 1945", "22 Juni 1945", "18 Agustus 1945"],
-    answer: 2
+    "q": "Contoh perilaku yang dapat memperkuat persatuan di sekolah adalah ....",
+    "choices": [
+      "membentuk kelompok berdasarkan suku",
+      "memilih teman berdasarkan status sosial",
+      "bekerja sama dalam kegiatan gotong royong",
+      "mengejek budaya daerah lain"
+    ],
+    "answer": 2
   },
   {
-    q: "Lambang sila ke-2 (Kemanusiaan yang Adil dan Beradab) adalah…",
-    choices: ["Padi dan Kapas", "Bintang", "Rantai Emas", "Pohon Beringin"],
-    answer: 2
+    "q": "Negara Indonesia berbentuk ....",
+    "choices": [
+      "kerajaan",
+      "republik",
+      "federasi",
+      "monarki"
+    ],
+    "answer": 1
   },
   {
-    q: "Tokoh yang dikenal sebagai 'Bapak Bangsa' dan menjadi presiden pertama RI adalah…",
-    choices: ["Mohammad Hatta", "Ir. Soekarno", "Soepomo", "Mohammad Yamin"],
-    answer: 1
+    "q": "Salah satu bentuk bela negara yang dapat dilakukan oleh pelajar adalah ....",
+    "choices": [
+      "mengikuti tawuran",
+      "menaati tata tertib dan belajar dengan sungguh-sungguh",
+      "menyebarkan berita bohong",
+      "merusak fasilitas umum"
+    ],
+    "answer": 1
   },
   {
-    q: "Lambang sila ke-4 (Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan dalam Permusyawaratan/Perwakilan) adalah…",
-    choices: ["Padi dan Kapas", "Rantai Emas", "Kepala Banteng", "Pohon Beringin"],
-    answer: 2
+    "q": "Menjaga keutuhan Negara Kesatuan Republik Indonesia merupakan tanggung jawab ....",
+    "choices": [
+      "TNI saja",
+      "pemerintah saja",
+      "aparat keamanan saja",
+      "seluruh warga negara"
+    ],
+    "answer": 3
   },
   {
-    q: "PPKI mengesahkan Pancasila sebagai dasar negara pada tanggal…",
-    choices: ["17 Agustus 1945", "18 Agustus 1945", "1 Juni 1945", "22 Juni 1945"],
-    answer: 1
+    "q": "Perilaku yang menunjukkan rasa cinta tanah air adalah ....",
+    "choices": [
+      "merusak fasilitas umum",
+      "menghargai budaya dan produk dalam negeri",
+      "merendahkan budaya daerah sendiri",
+      "tidak peduli terhadap lingkungan"
+    ],
+    "answer": 1
   },
   {
-    q: "Lambang sila ke-5 (Keadilan Sosial bagi Seluruh Rakyat Indonesia) adalah…",
-    choices: ["Bintang Emas", "Rantai Emas", "Kepala Banteng", "Padi dan Kapas"],
-    answer: 3
+    "q": "UUD Negara Republik Indonesia Tahun 1945 memiliki kedudukan sebagai ....",
+    "choices": [
+      "hukum dasar negara",
+      "peraturan sekolah",
+      "hukum adat",
+      "peraturan daerah"
+    ],
+    "answer": 0
   },
   {
-    q: "Nilai Pancasila sila ke-1 diterapkan dalam kehidupan sehari-hari dengan cara…",
-    choices: ["Membayar pajak tepat waktu", "Menghormati pemeluk agama lain", "Aktif bermusyawarah di desa", "Membeli produk dalam negeri"],
-    answer: 1
+    "q": "Contoh kewajiban seorang pelajar sebagai bagian dari warga negara adalah ....",
+    "choices": [
+      "mendapatkan pendidikan",
+      "mendapatkan perlindungan",
+      "menaati peraturan yang berlaku",
+      "memperoleh penghargaan"
+    ],
+    "answer": 2
   },
   {
-    q: "Tokoh yang mengusulkan nama 'Pancasila' sebagai dasar negara adalah…",
-    choices: ["Mohammad Yamin", "Soepomo", "Ir. Soekarno", "Mohammad Hatta"],
-    answer: 2
+    "q": "Seorang siswa menemukan informasi yang belum jelas kebenarannya di media sosial. Sikap yang tepat adalah ....",
+    "choices": [
+      "langsung menyebarkannya",
+      "menambahkan komentar provokatif",
+      "memeriksa kebenarannya terlebih dahulu",
+      "mengirimkannya ke semua grup"
+    ],
+    "answer": 2
   },
   {
-    q: "Semboyan negara Indonesia yang tertulis di bawah Garuda Pancasila adalah…",
-    choices: ["Bhineka Tunggal Ika", "Sekali Merdeka Tetap Merdeka", "Satu Nusa Satu Bangsa", "Merdeka atau Mati"],
-    answer: 0
+    "q": "Berita palsu yang sengaja dibuat dan disebarkan untuk menyesatkan masyarakat disebut ....",
+    "choices": [
+      "fakta",
+      "opini",
+      "hoaks",
+      "aspirasi"
+    ],
+    "answer": 2
   },
   {
-    q: "Penerapan nilai sila ke-3 Pancasila (Persatuan Indonesia) dalam kehidupan sehari-hari adalah…",
-    choices: ["Memaksakan kehendak kepada teman", "Mengutamakan kepentingan golongan", "Menggunakan produk dalam negeri", "Bersikap pilih kasih terhadap teman"],
-    answer: 2
+    "q": "Gotong royong merupakan salah satu sikap yang penting dalam kehidupan berbangsa karena ....",
+    "choices": [
+      "menumbuhkan kerja sama dan persatuan",
+      "membuat seseorang menjadi lebih berkuasa",
+      "menghilangkan keberagaman",
+      "mengutamakan kepentingan pribadi"
+    ],
+    "answer": 0
   },
   {
-    q: "Rumusan Pancasila yang sah dan berlaku sampai sekarang terdapat dalam…",
-    choices: ["Piagam Jakarta", "Pembukaan UUD 1945", "Batang Tubuh UUD 1945", "Dekrit Presiden 1959"],
-    answer: 1
+    "q": "Jika ada teman yang berbeda suku atau budaya diejek oleh teman lainnya, tindakan yang paling tepat adalah ....",
+    "choices": [
+      "ikut mengejek",
+      "membiarkannya",
+      "menegur dan mengajak menghargai perbedaan",
+      "membalas dengan mengejek suku pelaku"
+    ],
+    "answer": 2
   },
   {
-    q: "Berapa total jumlah bulu pada Sayap Garuda Pancasila yang melambangkan tanggal kemerdekaan RI?",
-    choices: ["17 bulu per sayap", "8 bulu per sayap", "45 bulu per sayap", "1945 bulu"],
-    answer: 0
+    "q": "Dalam kehidupan demokratis, perbedaan pendapat sebaiknya diselesaikan melalui ....",
+    "choices": [
+      "kekerasan",
+      "musyawarah",
+      "ancaman",
+      "pemaksaan"
+    ],
+    "answer": 1
   },
   {
-    q: "Musyawarah untuk mencapai mufakat merupakan penerapan nilai Pancasila sila ke…",
-    choices: ["Ke-2", "Ke-3", "Ke-4", "Ke-5"],
-    answer: 2
+    "q": "Salah satu bentuk penggunaan kemerdekaan berpendapat yang bertanggung jawab adalah ....",
+    "choices": [
+      "menyampaikan pendapat dengan sopan dan berdasarkan fakta",
+      "menghina orang yang berbeda pendapat",
+      "menyebarkan fitnah",
+      "memaksakan pendapat kepada orang lain"
+    ],
+    "answer": 0
   },
   {
-    q: "Lambang sila ke-3 Pancasila (Persatuan Indonesia) adalah…",
-    choices: ["Rantai Emas", "Kepala Banteng", "Pohon Beringin", "Bintang Emas"],
-    answer: 2
+    "q": "Wawasan Nusantara mengajarkan bahwa wilayah Indonesia harus dipandang sebagai ....",
+    "choices": [
+      "wilayah yang terpisah-pisah",
+      "satu kesatuan wilayah dan bangsa",
+      "kumpulan daerah yang berdiri sendiri",
+      "wilayah yang hanya terdiri dari pulau-pulau besar"
+    ],
+    "answer": 1
   },
   {
-    q: "Warna dasar perisai pada lambang Garuda Pancasila yang melambangkan keberanian adalah…",
-    choices: ["Hitam", "Merah", "Emas", "Putih"],
-    answer: 1
+    "q": "Perhatikan tindakan berikut:\n1. Menghormati perbedaan agama.\n2. Melaksanakan gotong royong.\n3. Menyebarkan ujaran kebencian.\n4. Menjaga fasilitas umum.\nPerilaku yang mencerminkan wawasan kebangsaan ditunjukkan oleh nomor ....",
+    "choices": [
+      "1, 2, dan 4",
+      "1, 3, dan 4",
+      "2 dan 3",
+      "3 dan 4"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tokoh yang dikenal sebagai pemimpin Perang Diponegoro adalah ...",
+    "choices": [
+      "Pangeran Diponegoro",
+      "Sultan Hasanuddin",
+      "Pattimura",
+      "Tuanku Imam Bonjol"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Pahlawan yang memimpin perlawanan rakyat Surabaya dan terkenal dengan pidato membakar semangat pada 10 November 1945 adalah ...",
+    "choices": [
+      "Jenderal Sudirman",
+      "Bung Tomo",
+      "Mohammad Hatta",
+      "Ki Hajar Dewantara"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Jenderal Sudirman dikenal dalam perjuangan mempertahankan kemerdekaan melalui strategi ...",
+    "choices": [
+      "Politik etis",
+      "Perang gerilya",
+      "Perang laut",
+      "Diplomasi dagang"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Kapitan Pattimura merupakan pahlawan yang berasal dari daerah ...",
+    "choices": [
+      "Aceh",
+      "Maluku",
+      "Bali",
+      "Kalimantan Timur"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Sultan Hasanuddin mendapat julukan dari Belanda sebagai ...",
+    "choices": [
+      "Ayam Jantan dari Timur",
+      "Macan dari Selatan",
+      "Elang dari Barat",
+      "Harimau Sumatra"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Pahlawan wanita dari Aceh yang berjuang melawan penjajahan Belanda adalah ...",
+    "choices": [
+      "R.A. Kartini",
+      "Dewi Sartika",
+      "Cut Nyak Dien",
+      "Martha Christina Tiahahu"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "R.A. Kartini dikenal sebagai pelopor ...",
+    "choices": [
+      "Pendidikan dan kemajuan perempuan",
+      "Perjuangan angkatan laut",
+      "Pembangunan jalan raya",
+      "Pertanian modern"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Dewi Sartika mendirikan sekolah bagi kaum perempuan yang dikenal dengan nama ...",
+    "choices": [
+      "Taman Siswa",
+      "Sekolah Isteri",
+      "Sekolah Rakyat",
+      "Perguruan Nasional"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pahlawan wanita muda dari Maluku yang turut melawan Belanda adalah ...",
+    "choices": [
+      "Martha Christina Tiahahu",
+      "Maria Walanda Maramis",
+      "Nyi Ageng Serang",
+      "Opu Daeng Risaju"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tokoh wanita yang menjahit Bendera Pusaka Merah Putih menjelang Proklamasi Kemerdekaan adalah ...",
+    "choices": [
+      "R.A. Kartini",
+      "Fatmawati",
+      "Cut Meutia",
+      "Dewi Sartika"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Presiden pertama Republik Indonesia adalah ...",
+    "choices": [
+      "Mohammad Hatta",
+      "Soekarno",
+      "Sutan Sjahrir",
+      "Soeharto"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Soekarno dan Mohammad Hatta membacakan teks Proklamasi Kemerdekaan pada tanggal ...",
+    "choices": [
+      "1 Juni 1945",
+      "17 Agustus 1945",
+      "18 Agustus 1945",
+      "10 November 1945"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Tokoh yang mengibarkan Bendera Pusaka Merah Putih pada saat Proklamasi Kemerdekaan 17 Agustus 1945 adalah ...",
+    "choices": [
+      "Soekarno dan Mohammad Hatta",
+      "Latief Hendraningrat dan Suhud",
+      "Bung Tomo dan Jenderal Sudirman",
+      "Ahmad Soebardjo dan Sutan Sjahrir"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Gambar pahlawan pada uang kertas Rp100.000 Tahun Emisi 2022 adalah ...",
+    "choices": [
+      "Soekarno dan Mohammad Hatta",
+      "Jenderal Sudirman dan Bung Tomo",
+      "Ki Hajar Dewantara dan R.A. Kartini",
+      "Pattimura dan Sultan Hasanuddin"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Pahlawan Ir. H. Djuanda Kartawidjaja terdapat pada uang kertas pecahan ...",
+    "choices": [
+      "Rp20.000",
+      "Rp50.000",
+      "Rp10.000",
+      "Rp5.000"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Gambar pahlawan pada uang kertas Rp20.000 Tahun Emisi 2022 adalah ...",
+    "choices": [
+      "Frans Kaisiepo",
+      "Dr. G.S.S.J. Ratulangi",
+      "Oto Iskandar di Nata",
+      "Mohammad Hoesni Thamrin"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Frans Kaisiepo terdapat pada uang kertas Rupiah pecahan ...",
+    "choices": [
+      "Rp10.000",
+      "Rp5.000",
+      "Rp2.000",
+      "Rp1.000"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "K.H. Idham Chalid terdapat pada uang kertas Rupiah pecahan ...",
+    "choices": [
+      "Rp50.000",
+      "Rp20.000",
+      "Rp10.000",
+      "Rp5.000"
+    ],
+    "answer": 3
+  },
+  {
+    "q": "Mohammad Hoesni Thamrin terdapat pada uang kertas Rupiah pecahan ...",
+    "choices": [
+      "Rp1.000",
+      "Rp2.000",
+      "Rp5.000",
+      "Rp10.000"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pahlawan wanita Tjut Meutia terdapat pada uang kertas Rupiah pecahan ...",
+    "choices": [
+      "Rp1.000",
+      "Rp2.000",
+      "Rp20.000",
+      "Rp50.000"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Ibu kota Provinsi Kalimantan Timur adalah ...",
+    "choices": [
+      "Balikpapan",
+      "Samarinda",
+      "Bontang",
+      "Tenggarong"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Jumlah kabupaten dan kota di Provinsi Kalimantan Timur adalah ...",
+    "choices": [
+      "7 kabupaten dan 3 kota",
+      "6 kabupaten dan 4 kota",
+      "8 kabupaten dan 2 kota",
+      "9 kabupaten dan 1 kota"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Kabupaten yang beribu kota di Tanjung Redeb adalah ...",
+    "choices": [
+      "Kabupaten Paser",
+      "Kabupaten Berau",
+      "Kabupaten Kutai Barat",
+      "Kabupaten Penajam Paser Utara"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Ibu kota Kabupaten Kutai Kartanegara adalah ...",
+    "choices": [
+      "Sangatta",
+      "Sendawar",
+      "Tenggarong",
+      "Tanah Grogot"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Sangatta merupakan ibu kota Kabupaten ...",
+    "choices": [
+      "Kutai Timur",
+      "Kutai Barat",
+      "Berau",
+      "Paser"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Kabupaten termuda di Kalimantan Timur yang beribu kota di Ujoh Bilang adalah ...",
+    "choices": [
+      "Mahakam Ulu",
+      "Kutai Kartanegara",
+      "Penajam Paser Utara",
+      "Berau"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Kota di Kalimantan Timur yang terkenal sebagai Kota Minyak adalah ...",
+    "choices": [
+      "Samarinda",
+      "Bontang",
+      "Balikpapan",
+      "Tenggarong"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Kabupaten Penajam Paser Utara beribu kota di ...",
+    "choices": [
+      "Penajam",
+      "Tanah Grogot",
+      "Sendawar",
+      "Sangatta"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Kepulauan Derawan, yang terkenal dengan wisata baharinya, berada di Kabupaten ...",
+    "choices": [
+      "Berau",
+      "Paser",
+      "Kutai Barat",
+      "Mahakam Ulu"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Danau Labuan Cermin berada di kawasan Biduk-Biduk, Kabupaten ...",
+    "choices": [
+      "Kutai Timur",
+      "Berau",
+      "Kutai Kartanegara",
+      "Paser"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Museum Mulawarman yang merupakan bekas keraton Kesultanan Kutai terletak di ...",
+    "choices": [
+      "Tenggarong",
+      "Bontang",
+      "Samarinda",
+      "Balikpapan"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Wisata susur Sungai Mahakam paling erat dikaitkan dengan Kota ...",
+    "choices": [
+      "Bontang",
+      "Balikpapan",
+      "Samarinda",
+      "Penajam"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Pulau Kakaban di Kabupaten Berau terkenal karena memiliki ...",
+    "choices": [
+      "Danau ubur-ubur",
+      "Kawah gunung api",
+      "Perkebunan teh",
+      "Air terjun bertingkat"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Desa Budaya Pampang, tempat wisata budaya masyarakat Dayak, berada di Kota ...",
+    "choices": [
+      "Samarinda",
+      "Balikpapan",
+      "Bontang",
+      "Tenggarong"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Salah satu sektor yang memberikan kontribusi sangat besar terhadap perekonomian Kalimantan Timur adalah ...",
+    "choices": [
+      "Pertambangan dan penggalian",
+      "Industri tekstil",
+      "Perkebunan teh",
+      "Perikanan air dingin"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Komoditas tambang yang sangat menonjol di Kalimantan Timur adalah ...",
+    "choices": [
+      "Timah",
+      "Batubara",
+      "Bauksit",
+      "Emas putih"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Selain pertambangan, komoditas perkebunan yang banyak dikembangkan di Kalimantan Timur adalah ...",
+    "choices": [
+      "Kelapa sawit",
+      "Teh",
+      "Apel",
+      "Stroberi"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Makanan ringan khas Samarinda yang dibuat dari ikan dan tepung lalu digoreng adalah ...",
+    "choices": [
+      "Amplang",
+      "Gudeg",
+      "Pempek",
+      "Bika ambon"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Ayam cincane khas Samarinda memiliki ciri utama berupa ...",
+    "choices": [
+      "Bumbu merah yang gurih",
+      "Kuah santan putih",
+      "Saus keju",
+      "Balutan gula cair"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Makanan khas Samarinda berupa kue berlapis dari tepung beras, santan, dan pisang disebut ...",
+    "choices": [
+      "Bubur peca",
+      "Amparan tatak",
+      "Lemper",
+      "Serabi"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Kerajaan tertua yang berada di wilayah Provinsi Kalimantan Timur adalah ...",
+    "choices": [
+      "Kerajaan Majapahit",
+      "Kerajaan Sriwijaya",
+      "Kerajaan Kutai Martadipura",
+      "Kerajaan Demak"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Kelompok yang seluruhnya merupakan nama jembatan di Kota Samarinda adalah ...",
+    "choices": [
+      "Jembatan Mahakam, Jembatan Mahakam II dan Jembatan Arif Rahman Hakim",
+      "Jembatan Ampera, Jembatan Suramadu, dan Jembatan Mahakam",
+      "Jembatan Barito, Jembatan Kahayan, dan Jembatan Merah",
+      "Jembatan Kapuas, Jembatan Tayan, dan Jembatan Mahakam Ulu"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Semboyan Bhinneka Tunggal Ika memiliki makna, walaupun beragam?",
+    "choices": [
+      "Suku bangsa, agama, ras dan antar golongan tetapi tetap satu kesatuan",
+      "Pemikiran tetapi tetap untuk kemajuan Indonesia",
+      "Indonesia negara majemuk, tetapi mampu hidup rukun",
+      "Peraturan tetapi tetap menjunjung hukum nasional"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Dengan adanya Ideologi Pancasila dimaksudkan untuk mendidik masyarakat agar ...",
+    "choices": [
+      "Dapat mengemukakan pendapat sesuai dengan suara hati",
+      "Tidak ada pemaksaan terhadap suatu peraturan",
+      "Dapat meningkatkan kesejahteraan masyarakat",
+      "Bertingkah laku sesuai dengan norma yang berlaku"
+    ],
+    "answer": 3
+  },
+  {
+    "q": "Tugas utama BPUPKI adalah ....",
+    "choices": [
+      "Menyelidiki dan mempersiapkan hal-hal terkait kemerdekaan",
+      "Membentuk tentara nasional",
+      "Merancang Undang-Undang Hukum Pidana",
+      "Melatih rakyat untuk perang"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Ketua BPUPKI adalah ....",
+    "choices": [
+      "Mohammad Hatta",
+      "Soepomo",
+      "Dr. Radjiman Wedyodiningrat",
+      "Ahmad Subardjo"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Panitia Sembilan berhasil merumuskan ....",
+    "choices": [
+      "Proklamasi Kemerdekaan",
+      "Piagam Jakarta",
+      "Undang-Undang Perang",
+      "Tata Tertib Sidang"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pancasila ditetapkan sebagai dasar negara pada tanggal ....",
+    "choices": [
+      "1 Juni 1945",
+      "17 Agustus 1945",
+      "18 Agustus 1945",
+      "19 Agustus 1945"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Sistematika atau susunan UUD 1945 saat disahkan adalah ....",
+    "choices": [
+      "Pembukaan dan Batang Tubuh",
+      "Pembukaan, Batang Tubuh, dan Penjelasan",
+      "Pembukaan, Pasal-pasal, dan Lampiran",
+      "Mukadimah dan Pasal-pasal"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pasal UUD 1945 yang menegaskan bahwa bentuk negara Indonesia tidak dapat diubah adalah pasal ....",
+    "choices": [
+      "1 ayat 1",
+      "7",
+      "37",
+      "18"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Pembukaan UUD 1945 tidak dapat diubah karena ....",
+    "choices": [
+      "Sudah ditetapkan MPR",
+      "Mengandung dasar dan tujuan negara",
+      "Sesuai Piagam Jakarta",
+      "Berisi sila-sila Pancasila"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pancasila sebagai dasar negara pertama kali dicetuskan oleh ....",
+    "choices": [
+      "Dr. Radjiman Wedyodiningrat",
+      "Ir. Soekarno",
+      "Mohammad Yamin",
+      "Soepomo"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Nilai sila pertama Pancasila adalah ....",
+    "choices": [
+      "Keadilan sosial",
+      "Persatuan Indonesia",
+      "Ketuhanan Yang Maha Esa",
+      "Kerakyatan yang dipimpin oleh hikmat kebijaksanaan"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Makna persatuan dan kesatuan dapat ditunjukkan melalui ....",
+    "choices": [
+      "Munculnya konflik di masyarakat",
+      "Kerja sama dan sikap saling melengkapi",
+      "Perpecahan antarwarga masyarakat",
+      "Sikap intoleransi"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Berikut yang bukan manfaat persatuan dan kesatuan adalah ....",
+    "choices": [
+      "Munculnya konflik",
+      "Memperkuat jati diri bangsa",
+      "Kerukunan dan silaturahmi terjaga",
+      "Masyarakat merasa aman dan nyaman"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Contoh perilaku mempertahankan persatuan di sekolah adalah ....",
+    "choices": [
+      "Tidak mematuhi aturan sekolah",
+      "Kerja sama tanpa memandang suku dan agama",
+      "Bangga terhadap diri sendiri",
+      "Mementingkan kelompok tertentu"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Nilai persatuan dalam kehidupan bangsa tercermin dalam ....",
+    "choices": [
+      "Menghormati hak orang lain",
+      "Melakukan korupsi",
+      "Membeda-bedakan suku dan agama",
+      "Sikap individualisme"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Semangat persatuan ditunjukkan dalam Sumpah Pemuda pada tanggal ....",
+    "choices": [
+      "28 Oktober 1928",
+      "17 Agustus 1945",
+      "18 Agustus 1945",
+      "29 Mei 1945"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Lambang negara yang mencerminkan persatuan adalah ....",
+    "choices": [
+      "Burung Garuda",
+      "Bendera Merah Putih",
+      "Pancasila",
+      "Lagu Kebangsaan"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Peran tokoh bangsa dalam persatuan tercermin melalui ....",
+    "choices": [
+      "Pertikaian antar kelompok",
+      "Perundingan dan diplomasi",
+      "Sikap diskriminatif",
+      "Konflik horizontal"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Konflik sosial dapat dihindari jika masyarakat mengedepankan nilai ....",
+    "choices": [
+      "Kekuasaan",
+      "Kesetaraan",
+      "Individualisme",
+      "Otoriterisme"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Gambar seluruh atau sebagian permukaan bumi pada bidang datar dengan skala tertentu disebut ....",
+    "choices": [
+      "globe",
+      "peta",
+      "atlas",
+      "denah"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Komponen peta yang menjelaskan arti simbol-simbol pada peta disebut ....",
+    "choices": [
+      "legenda",
+      "skala",
+      "judul",
+      "garis astronomis"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Arah yang biasanya ditunjukkan pada bagian atas peta adalah ....",
+    "choices": [
+      "selatan",
+      "barat",
+      "timur",
+      "utara"
+    ],
+    "answer": 3
+  },
+  {
+    "q": "Perbandingan jarak pada peta dengan jarak sebenarnya disebut ....",
+    "choices": [
+      "orientasi",
+      "indeks",
+      "skala",
+      "inset"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Garis khayal mendatar yang digunakan untuk menentukan posisi suatu wilayah di utara atau selatan khatulistiwa disebut ....",
+    "choices": [
+      "garis lintang",
+      "garis bujur",
+      "garis tepi",
+      "garis kontur"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Kalimantan Timur terletak di bagian .... Pulau Kalimantan.",
+    "choices": [
+      "barat",
+      "timur",
+      "selatan",
+      "tengah"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pulau Kalimantan berbatasan langsung di daratan dengan negara ....",
+    "choices": [
+      "Malaysia",
+      "Thailand",
+      "Filipina",
+      "Singapura"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Sungai besar yang mengalir melalui wilayah Kalimantan Timur dan Kota Samarinda adalah Sungai ....",
+    "choices": [
+      "Kapuas",
+      "Barito",
+      "Mahakam",
+      "Musi"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Ibu kota Provinsi Kalimantan Selatan adalah ....",
+    "choices": [
+      "Banjarbaru",
+      "Pontianak",
+      "Palangka Raya",
+      "Tanjung Selor"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Ibu kota Provinsi Kalimantan Barat adalah ....",
+    "choices": [
+      "Samarinda",
+      "Pontianak",
+      "Banjarmasin",
+      "Tarakan"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Tari Saman berasal dari Provinsi ....",
+    "choices": [
+      "Aceh",
+      "Bali",
+      "Jawa Barat",
+      "Papua"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tari Kecak merupakan tarian tradisional yang berasal dari ....",
+    "choices": [
+      "Sumatera Barat",
+      "Kalimantan Timur",
+      "Bali",
+      "Sulawesi Selatan"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Tari Piring berasal dari daerah ....",
+    "choices": [
+      "Jawa Tengah",
+      "Sumatera Barat",
+      "Maluku",
+      "Nusa Tenggara Timur"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Tari Hudoq yang dikenal menggunakan topeng merupakan budaya masyarakat Dayak di wilayah ....",
+    "choices": [
+      "Kalimantan Timur",
+      "Jawa Timur",
+      "Sulawesi Utara",
+      "Lampung"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tokoh yang membacakan teks Proklamasi Kemerdekaan Indonesia pada 17 Agustus 1945 adalah ....",
+    "choices": [
+      "Mohammad Hatta",
+      "Soekarno",
+      "Jenderal Sudirman",
+      "Ki Hajar Dewantara"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Tokoh yang mendampingi Soekarno saat Proklamasi Kemerdekaan dan kemudian menjadi Wakil Presiden pertama Indonesia adalah ....",
+    "choices": [
+      "Mohammad Hatta",
+      "Ahmad Yani",
+      "Sutan Sjahrir",
+      "Bung Tomo"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Pahlawan perempuan dari Aceh yang gigih melawan penjajahan Belanda adalah ....",
+    "choices": [
+      "R.A. Kartini",
+      "Martha Christina Tiahahu",
+      "Cut Nyak Dien",
+      "Dewi Sartika"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Tokoh yang terkenal membangkitkan semangat rakyat Surabaya dalam pertempuran 10 November 1945 adalah ....",
+    "choices": [
+      "Pattimura",
+      "Bung Tomo",
+      "Tuanku Imam Bonjol",
+      "Pangeran Diponegoro"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Sikap yang tepat untuk menghargai jasa para pahlawan adalah ....",
+    "choices": [
+      "mengabaikan upacara bendera",
+      "merusak fasilitas umum",
+      "belajar sungguh-sungguh dan menjaga persatuan",
+      "mementingkan kelompok sendiri"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Tari Gantar merupakan tarian tradisional masyarakat Dayak yang berkembang di daerah ....",
+    "choices": [
+      "Kalimantan Timur",
+      "Sumatera Utara",
+      "Jawa Barat",
+      "Bali"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tari Kancet Ledo dari Kalimantan Timur dikenal juga dengan nama Tari ....",
+    "choices": [
+      "Piring",
+      "Gong",
+      "Serimpi",
+      "Kipas"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Tari Hudoq biasanya menggunakan perlengkapan utama berupa ....",
+    "choices": [
+      "payung",
+      "piring",
+      "topeng",
+      "kipas"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Lagu daerah 'Indung-Indung' berasal dari ....",
+    "choices": [
+      "Kalimantan Timur",
+      "Maluku",
+      "Jawa Tengah",
+      "Sulawesi Utara"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Lagu daerah 'Buah Bolok' dikenal sebagai lagu dari daerah ....",
+    "choices": [
+      "Kutai, Kalimantan Timur",
+      "Minangkabau, Sumatera Barat",
+      "Betawi, DKI Jakarta",
+      "Banyuwangi, Jawa Timur"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Lagu 'Ampar-Ampar Pisang' berasal dari Provinsi ....",
+    "choices": [
+      "Kalimantan Barat",
+      "Kalimantan Selatan",
+      "Kalimantan Timur",
+      "Kalimantan Utara"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Lagu daerah 'Apuse' berasal dari ....",
+    "choices": [
+      "Papua",
+      "Aceh",
+      "Bali",
+      "Lampung"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Lagu 'Yamko Rambe Yamko' dikenal sebagai lagu daerah dari ....",
+    "choices": [
+      "Riau",
+      "Papua",
+      "Banten",
+      "Bengkulu"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Jenderal Sudirman dikenal sebagai Panglima Besar yang memimpin perjuangan dengan strategi ....",
+    "choices": [
+      "diplomasi dagang",
+      "perang gerilya",
+      "politik etis",
+      "tanam paksa"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Walaupun sedang sakit, Jenderal Sudirman tetap berjuang dengan cara ....",
+    "choices": [
+      "memimpin gerilya melawan Belanda",
+      "meninggalkan Indonesia",
+      "bekerja untuk pemerintah kolonial",
+      "menghentikan seluruh perlawanan"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Bung Tomo dikenang karena membangkitkan semangat rakyat dalam pertempuran di Kota ....",
+    "choices": [
+      "Bandung",
+      "Surabaya",
+      "Medan",
+      "Semarang"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pertempuran Surabaya yang diperingati sebagai Hari Pahlawan terjadi pada tanggal ....",
+    "choices": [
+      "1 Juni",
+      "17 Agustus",
+      "10 November",
+      "28 Oktober"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Tokoh yang dikenal sebagai Bapak Pendidikan Nasional adalah ....",
+    "choices": [
+      "Ki Hajar Dewantara",
+      "Mohammad Yamin",
+      "Jenderal Sudirman",
+      "Bung Tomo"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Semboyan pendidikan 'Tut Wuri Handayani' dikemukakan oleh ....",
+    "choices": [
+      "R.A. Kartini",
+      "Ki Hajar Dewantara",
+      "Dewi Sartika",
+      "Cut Nyak Dien"
+    ],
+    "answer": 1
+  },
+  {
+    "q": "Pahlawan perempuan yang mendirikan Sekolah Istri untuk pendidikan kaum perempuan adalah ....",
+    "choices": [
+      "Dewi Sartika",
+      "Cut Meutia",
+      "Martha Christina Tiahahu",
+      "Maria Walanda Maramis"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Proklamasi Kemerdekaan Republik Indonesia dibacakan pada tanggal ....",
+    "choices": [
+      "20 Mei 1908",
+      "28 Oktober 1928",
+      "17 Agustus 1945",
+      "10 November 1945"
+    ],
+    "answer": 2
+  },
+  {
+    "q": "Teks Proklamasi Kemerdekaan Indonesia dibacakan di ....",
+    "choices": [
+      "Jalan Pegangsaan Timur Nomor 56, Jakarta",
+      "Istana Bogor",
+      "Gedung Sate, Bandung",
+      "Tugu Pahlawan, Surabaya"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tokoh yang mengetik naskah Proklamasi Kemerdekaan Indonesia adalah ....",
+    "choices": [
+      "Sayuti Melik",
+      "Sukarni",
+      "Wikana",
+      "B.M. Diah"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Tokoh yang turut merumuskan naskah Proklamasi bersama Soekarno dan Mohammad Hatta adalah ....",
+    "choices": [
+      "Ahmad Soebardjo",
+      "Bung Tomo",
+      "Jenderal Sudirman",
+      "Ki Hajar Dewantara"
+    ],
+    "answer": 0
+  },
+  {
+    "q": "Peristiwa Rengasdengklok bertujuan mendesak Soekarno dan Mohammad Hatta agar segera ....",
+    "choices": [
+      "membentuk organisasi dagang",
+      "memproklamasikan kemerdekaan Indonesia",
+      "menyerahkan kekuasaan kepada Jepang",
+      "meninggalkan Jakarta selamanya"
+    ],
+    "answer": 1
   }
 ];
 
@@ -248,10 +1348,16 @@ function submitHostPassword() {
 
   if (val === hostMasterPassword.trim().toUpperCase()) {
     if (window.Sound) Sound.play('start');
+    try {
+      sessionStorage.setItem('host_authenticated', 'true');
+    } catch (e) {}
+
     const action = pendingHostAction;
     closeHostPassModal();
     if (action === 'create-room') {
       goToCreateRoom();
+    } else if (action === 'admin') {
+      window.location.href = 'admin.html';
     }
   } else {
     if (window.Sound) Sound.play('wrong');
@@ -657,10 +1763,62 @@ async function hostStartGame() {
   const settSnap = await db.ref(`rooms/${roomCode}/settings`).get();
   const settings = settSnap.val();
 
-  // Pick question order according to question count limit
-  const fullShuffled = shuffle([...Array(dynamicQuestionBank.length).keys()]);
-  const maxQ = Math.min(settings.questionCount || 10, dynamicQuestionBank.length);
-  const qOrder = fullShuffled.slice(0, maxQ);
+  // Fetch freshest question bank from Firebase
+  let freshQuestions = [];
+  try {
+    const qSnap = await db.ref('admin/questions').get();
+    if (qSnap.exists()) {
+      const data = qSnap.val();
+      freshQuestions = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+    }
+  } catch (e) {
+    console.warn('Could not fetch fresh questions from Firebase, using cached:', e);
+  }
+  if (freshQuestions && freshQuestions.length > 0) {
+    dynamicQuestionBank = freshQuestions;
+  }
+
+  const requestedCount = Math.min(settings.questionCount || 10, dynamicQuestionBank.length);
+
+  // Filter questions that have been used LESS than 2 times
+  let eligibleIndices = [];
+  dynamicQuestionBank.forEach((qItem, idx) => {
+    const used = qItem.usedCount || 0;
+    if (used < 2) {
+      eligibleIndices.push(idx);
+    }
+  });
+
+  // If remaining questions with usedCount < 2 is less than requestedCount, reset usage cycle
+  if (eligibleIndices.length < requestedCount) {
+    console.log(`[Rotasi Soal] Soal tersisa (<2x) hanya ${eligibleIndices.length}. Mereset kuota putaran soal (0/2x).`);
+    dynamicQuestionBank.forEach(qItem => {
+      qItem.usedCount = 0;
+    });
+    try {
+      await db.ref('admin/questions').set(dynamicQuestionBank);
+    } catch (e) {
+      console.warn('Failed to reset question counts on Firebase:', e);
+    }
+    eligibleIndices = [...Array(dynamicQuestionBank.length).keys()];
+  }
+
+  // Shuffle eligible questions and take max requestedCount questions
+  const shuffledEligible = shuffle(eligibleIndices);
+  const qOrder = shuffledEligible.slice(0, requestedCount);
+
+  // Increment usedCount by 1 for each chosen question and update Firebase
+  qOrder.forEach(idx => {
+    const currentUsed = Number(dynamicQuestionBank[idx]?.usedCount) || 0;
+    const nextUsed = currentUsed + 1;
+    dynamicQuestionBank[idx].usedCount = nextUsed;
+  });
+
+  try {
+    await db.ref('admin/questions').set(dynamicQuestionBank);
+  } catch (e) {
+    console.warn('Failed to update question usage counts on Firebase:', e);
+  }
 
   const answerDuration = Math.max(5, settings.timerDuration - READING_DURATION);
 
@@ -1087,7 +2245,7 @@ function updateSpectatorUI(game, settings) {
       }
 
       if (game.lastResult) {
-        applySpecChoiceResult(game.lastResult, q.answer);
+        applySpecChoiceResult(game.lastResult, q.answer, game.phase);
       }
     }
   }
@@ -1131,12 +2289,18 @@ function renderSpecChoices(choices, phase) {
   });
 }
 
-function applySpecChoiceResult(lastResult, correctIdx) {
+function applySpecChoiceResult(lastResult, correctIdx, phase) {
   for (let i = 0; i < 4; i++) {
     const btn = document.getElementById(`spec-choice-${i}`);
     if (!btn) continue;
-    if (i === correctIdx) btn.classList.add('correct');
-    if (i === lastResult.idx && i !== correctIdx) btn.classList.add('wrong');
+    // Reveal correct answer ONLY in review phase
+    if (phase === 'review' && i === correctIdx) {
+      btn.classList.add('correct');
+    }
+    // Mark wrong choice
+    if (i === lastResult.idx && i !== correctIdx) {
+      btn.classList.add('wrong');
+    }
   }
 }
 
@@ -1168,6 +2332,24 @@ function updateSpecStatusBar(game, settings) {
 }
 
 let lastProcessedResultKey = null;
+let turnToastTimer = null;
+
+function showTurnChanceToast(oppTeamName) {
+  const toast = document.getElementById('pg-turn-toast');
+  if (!toast) return;
+  toast.textContent = `⚡ ${oppTeamName} salah! Sekarang giliran tim kamu menjawab!`;
+  toast.classList.add('show');
+  if (turnToastTimer) clearTimeout(turnToastTimer);
+  turnToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2800);
+}
+
+function hideTurnChanceToast() {
+  const toast = document.getElementById('pg-turn-toast');
+  if (toast) toast.classList.remove('show');
+  if (turnToastTimer) clearTimeout(turnToastTimer);
+}
 
 function showSpecFeedback(result) {
   const overlay = document.getElementById('spec-feedback-overlay');
@@ -1221,16 +2403,20 @@ function showPlayerFeedback(game, settings, q) {
     }
   } else if (result.type === 'turn_chance') {
     if (myAnswered) {
+      // My team answered wrong: display waiting message
       typeClass = 'feedback-wrong';
       title = '❌ JAWABAN KAMU SALAH!';
       sub = `<span style="color:#ffd32a; font-size:1.1em; display:inline-block; margin-top:6px;">⏳ Tunggu tim lawan menjawab...</span>`;
       if (isNewResult && window.Sound) Sound.play('wrong');
     } else {
-      typeClass = 'feedback-correct';
-      title = '⚡ LAWAN SALAH!';
-      sub = `<span style="color:#10b981; font-size:1.1em; display:inline-block; margin-top:6px;">🎯 Giliran tim kamu menjawab sekarang!</span>`;
-      if (isNewResult && window.Sound) Sound.play('go');
-      setTimeout(() => hidePlayerFeedback(), 2000);
+      // Opponent answered wrong: IT IS MY TURN TO ANSWER!
+      // Do NOT show blocking overlay modal! Show non-blocking banner & play sound once.
+      hidePlayerFeedback();
+      if (isNewResult) {
+        if (window.Sound) Sound.play('go');
+        showTurnChanceToast(oppTeamName);
+      }
+      return;
     }
   } else if (result.type === 'wrong') {
     typeClass = 'feedback-wrong';
@@ -1278,6 +2464,7 @@ function updatePlayerUI(game, settings) {
 
   if (game.phase === 'reading') {
     hidePlayerFeedback();
+    hideTurnChanceToast();
     const rLeft = game.readingTimeLeft ?? READING_DURATION;
     phaseBadge.textContent = `📖 BACA SOAL (${rLeft}s)`;
     phaseBadge.className = 'phase-indicator-badge reading';
@@ -1300,6 +2487,7 @@ function updatePlayerUI(game, settings) {
     lastPhase = game.phase;
     hasAnswered = false;
     hidePlayerFeedback();
+    hideTurnChanceToast();
     document.getElementById('pg-q-text').textContent = q.q;
     renderPlayerChoices(q.choices, game.phase, game);
   }
@@ -1308,20 +2496,28 @@ function updatePlayerUI(game, settings) {
   if (game.lastResult) {
     showPlayerFeedback(game, settings, q);
   } else if (game.phase === 'reading' || game.phase === 'answering') {
-    if (!game.lastResult) hidePlayerFeedback();
+    hidePlayerFeedback();
   }
 
-  // Lock team choices if this team already answered wrong
+  // Lock team choices if this team already answered wrong, OR enable if it's turn_chance for waiting team
   const myStatus = myTeam === 'A' ? game.teamAStatus : game.teamBStatus;
-  if (myStatus === 'wrong' && game.phase === 'answering') {
+  if (myStatus === 'wrong' && (game.phase === 'answering' || game.phase === 'review')) {
     document.querySelectorAll('.pg-choice-btn').forEach(b => b.disabled = true);
     const bar = document.getElementById('pg-status-bar');
-    bar.textContent = '❌ Jawaban kamu salah! Menunggu tim lawan menjawab...';
-    bar.className = 'pg-status pg-wrong';
-  } else if (game.lastResult?.type === 'turn_chance' && myStatus === 'waiting') {
+    if (bar) {
+      bar.textContent = '❌ Jawaban kamu salah! Menunggu tim lawan menjawab...';
+      bar.className = 'pg-status pg-wrong';
+    }
+  } else if (game.lastResult?.type === 'turn_chance' && myStatus === 'waiting' && game.phase === 'answering') {
+    // Enable choices for the chance team so they can answer immediately
+    document.querySelectorAll('.pg-choice-btn').forEach(b => {
+      b.disabled = false;
+    });
     const bar = document.getElementById('pg-status-bar');
-    bar.textContent = '⚡ Tim lawan salah! Sekarang giliran kamu menjawab!';
-    bar.className = 'pg-status pg-correct';
+    if (bar) {
+      bar.textContent = '⚡ Tim lawan salah! Sekarang giliran kamu menjawab!';
+      bar.className = 'pg-status pg-correct';
+    }
   }
 }
 
@@ -1343,7 +2539,7 @@ function renderPlayerChoices(choices, phase, game) {
     return;
   }
 
-  const myStatus = myTeam === 'A' ? game.teamAStatus : game.teamBStatus;
+  const myStatus = myTeam === 'A' ? game?.teamAStatus : game?.teamBStatus;
   const isLocked = myStatus === 'wrong';
 
   choices.forEach((text, i) => {
@@ -1361,8 +2557,11 @@ function renderPlayerChoices(choices, phase, game) {
     grid.appendChild(btn);
   });
 
-  document.getElementById('pg-status-bar').textContent = isLocked ? '❌ Terkunci' : '⚡ Pilih jawaban sekarang!';
-  document.getElementById('pg-status-bar').className = 'pg-status';
+  const bar = document.getElementById('pg-status-bar');
+  if (bar) {
+    bar.textContent = isLocked ? '❌ Terkunci' : '⚡ Pilih jawaban sekarang!';
+    bar.className = 'pg-status';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1614,27 +2813,30 @@ function shuffle(arr) {
    ═══════════════════════════════════════════════════════════ */
 async function initFirebaseDataSync() {
   try {
-    const qSnap = await db.ref('admin/questions').get();
-    if (qSnap.exists()) {
-      const data = qSnap.val();
-      if (Array.isArray(data)) {
-        dynamicQuestionBank = data;
-      } else if (typeof data === 'object') {
-        dynamicQuestionBank = Object.values(data);
+    db.ref('admin/questions').on('value', (qSnap) => {
+      if (qSnap.exists()) {
+        const data = qSnap.val();
+        if (Array.isArray(data)) {
+          dynamicQuestionBank = data.filter(Boolean);
+        } else if (typeof data === 'object') {
+          dynamicQuestionBank = Object.values(data);
+        }
+      } else {
+        db.ref('admin/questions').set(DEFAULT_QUESTIONS);
       }
-    } else {
-      await db.ref('admin/questions').set(DEFAULT_QUESTIONS);
-    }
+    });
 
-    const teamSnap = await db.ref('admin/settings/teamNames').get();
-    if (teamSnap.exists()) {
-      customTeamNames = teamSnap.val();
-    }
+    db.ref('admin/settings/teamNames').on('value', (teamSnap) => {
+      if (teamSnap.exists()) {
+        customTeamNames = teamSnap.val();
+      }
+    });
 
-    const passSnap = await db.ref('admin/settings/hostPassword').get();
-    if (passSnap.exists()) {
-      hostMasterPassword = passSnap.val();
-    }
+    db.ref('admin/settings/hostPassword').on('value', (passSnap) => {
+      if (passSnap.exists()) {
+        hostMasterPassword = passSnap.val();
+      }
+    });
   } catch (e) {
     console.warn('Firebase init sync warning:', e);
   }

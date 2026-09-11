@@ -80,7 +80,25 @@ Di Firebase Console → Realtime Database → **Rules**, ganti dengan:
         ".read": true,
         ".write": true
       }
+    },
+    "admin": {
+      ".read": true,
+      ".write": true
+    },
+    "history": {
+      ".read": true,
+      ".write": true
     }
+  }
+}
+```
+
+Atau cara paling mudah (mode bebas):
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": true
   }
 }
 ```

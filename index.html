@@ -57,10 +57,9 @@
   <section id="screen-home" class="screen active">
     <div class="home-container">
       <div class="home-hero">
-        <span class="home-badge-pill">🇮🇩 KUIS IDEOLOGI PANCASILA</span>
-        <div class="home-flag-emblem">🇮🇩</div>
+        <span class="home-badge-pill">KUIS IDEOLOGI PANCASILA</span>
         <h1 class="home-title">Tarik Tambang Quiz</h1>
-        <p class="home-subtitle">Adu Cepat & Pengetahuan Pancasila · Tarik Tambang Merah Putih</p>
+        <p class="home-subtitle">Adu Cepat & Pengetahuan Pancasila</p>
         <div class="home-rope-deco">
           <div class="home-puller-figure puller-left">
             <span class="puller-emoji">🏃‍♂️</span>
@@ -94,9 +93,16 @@
           </div>
           <span class="home-btn-arrow">›</span>
         </button>
-      </div>
 
-      <p class="home-footer">🇮🇩 Belajar seru & asyik bersama teman sekelas!</p>
+        <button class="btn-home-action btn-admin-action" id="btn-go-admin" onclick="promptHostPassword('admin')">
+          <span class="home-btn-icon">⚙️</span>
+          <div class="home-btn-text">
+            <span class="home-btn-title">Panel Admin Host</span>
+            <span class="home-btn-sub">Admin · Kelola Bank Soal, Nama Tim, & Riwayat Pertandingan</span>
+          </div>
+          <span class="home-btn-arrow">›</span>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -125,7 +131,10 @@
               <option value="10" selected>10 Soal</option>
               <option value="15">15 Soal</option>
               <option value="20">20 Soal</option>
-              <option value="999">Semua Soal</option>
+              <option value="25">25 Soal</option>
+              <option value="50">50 Soal</option>
+              <option value="100">100 Soal</option>
+              <option value="999">Semua Soal (120 Soal)</option>
             </select>
           </div>
         </div>
@@ -149,8 +158,8 @@
         <!-- PENGATURAN WAKTU PER SOAL (Dengan 5 detik membaca otomatis) -->
         <div class="setting-row">
           <div class="setting-info">
-            <label for="cr-timer">⏱️ Waktu per Soal</label>
-            <p class="setting-hint">5 detik pertama baca soal + sisa waktu jawab</p>
+            <label for="cr-timer">⏱️ Total Waktu per Soal</label>
+            <p class="setting-hint">5 detik pertama otomatis waktu membaca soal</p>
           </div>
           <div class="setting-input-wrap">
             <select id="cr-timer">
@@ -167,6 +176,12 @@
       <button class="btn-primary btn-create-room-action" id="btn-create-room" onclick="createRoom()">
         🚀 Buat Room Pertandingan
       </button>
+
+      <div style="text-align:center; margin-top: 16px;">
+        <button type="button" class="btn-secondary" onclick="promptHostPassword('admin')" style="padding: 10px 20px; font-size: 0.95rem; border-radius: var(--radius-md);">
+          ⚙️ Kelola Bank Soal di Panel Admin ➔
+        </button>
+      </div>
     </div>
   </section>
 
@@ -541,6 +556,8 @@
       <div class="feedback-overlay" id="pg-feedback-overlay">
         <div class="feedback-content" id="pg-feedback-content"></div>
       </div>
+
+      <div class="turn-chance-toast" id="pg-turn-toast">⚡ Tim lawan salah! Sekarang giliran kamu menjawab!</div>
 
       <div class="pg-status" id="pg-status-bar">⏳ Siap menjawab...</div>
     </div>
